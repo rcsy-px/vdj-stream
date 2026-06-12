@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest a focused improvement for VDJ Companion
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: What workflow or problem would this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the desired result without including private data or media URLs.
+    validations:
+      required: true

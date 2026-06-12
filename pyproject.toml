@@ -1,0 +1,31 @@
+[project]
+name = "vdj-youtube-companion"
+version = "0.1.0"
+description = "Local YouTube search and streaming companion for VirtualDJ"
+requires-python = ">=3.12"
+license = "MIT"
+readme = "README.md"
+authors = [
+  { name = "rcsy-px" },
+]
+keywords = ["virtualdj", "youtube", "dj", "online-source"]
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.34",
+  "playwright>=1.50",
+  "httpx>=0.28",
+  "pydantic>=2.10",
+  "pydantic-settings>=2.7",
+  "aiosqlite>=0.20",
+  "python-dotenv>=1.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.25",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

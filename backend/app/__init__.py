@@ -1,0 +1,1 @@
+"""VirtualDJ YouTube Companion application."""

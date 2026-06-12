@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180" role="img" aria-labelledby="title desc">
+  <title id="title">VDJ Companion</title>
+  <desc id="desc">A play button surrounded by an audio waveform next to the VDJ Companion name.</desc>
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="180" rx="28" fill="#111318"/>
+  <circle cx="95" cy="90" r="58" fill="url(#g)"/>
+  <path d="M78 59v62l50-31z" fill="#fff"/>
+  <path d="M22 90h20m106 0h20M35 68v44m120-58v72" fill="none" stroke="#9ca3af" stroke-width="8" stroke-linecap="round"/>
+  <text x="190" y="82" fill="#f4f5f7" font-family="Segoe UI,Arial,sans-serif" font-size="48" font-weight="700">VDJ Companion</text>
+  <text x="193" y="123" fill="#9ca3af" font-family="Segoe UI,Arial,sans-serif" font-size="24">YouTube search inside VirtualDJ</text>
+</svg>

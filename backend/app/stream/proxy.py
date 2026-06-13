@@ -15,6 +15,8 @@ async def proxy_youtube_stream(
     video_id: str,
     resolver: YtDlpResolver,
     default_range: str | None = None,
+    connect_timeout: float = 10.0,
+    read_timeout: float = 30.0,
 ) -> StreamingResponse:
     range_header = request.headers.get("range") or default_range
     response: httpx.Response | None = None
@@ -24,7 +26,13 @@ async def proxy_youtube_stream(
         headers = dict(stream.http_headers)
         if range_header:
             headers["Range"] = range_header
-        client = httpx.AsyncClient(follow_redirects=True, timeout=None)
+        timeout = httpx.Timeout(
+            connect=connect_timeout,
+            read=read_timeout,
+            write=connect_timeout,
+            pool=connect_timeout,
+        )
+        client = httpx.AsyncClient(follow_redirects=True, timeout=timeout)
         upstream_request = client.build_request("GET", stream.upstream_url, headers=headers)
         response = await client.send(upstream_request, stream=True)
         if response.status_code not in (403, 410) or attempt == 1:

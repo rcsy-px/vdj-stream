@@ -18,7 +18,7 @@ powershell -ExecutionPolicy Bypass -File plugin\online-source\build-and-install.
 ```
 
 That script refreshes the distributable prebuilt DLL. Include the updated
-`plugin\online-source\prebuilt\x64\VdjCompanionSource.dll` with plugin changes.
+`plugin\online-source\prebuilt\x64\VDJ Companion Source.dll` with plugin changes.
 
 ## Pull requests
 

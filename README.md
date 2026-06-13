@@ -43,7 +43,7 @@ you load them onto a deck.
 2. Double-click `START.bat`.
 3. Wait for the first-time setup to finish.
 4. Restart VirtualDJ.
-5. Open **Online Music → VDJ Companion YouTube** in VirtualDJ's browser.
+5. Open **Online Music → VDJ Companion Source** in VirtualDJ's browser.
 
 That is all. `START.bat` downloads only missing portable dependencies, installs
 the included plugin into VirtualDJ's active plugin folder, and starts the local
@@ -111,7 +111,7 @@ powershell -ExecutionPolicy Bypass -File plugin\online-source\build-and-install.
 ```
 
 The build script refreshes the distributable plugin at
-`plugin\online-source\prebuilt\x64\VdjCompanionSource.dll`.
+`plugin\online-source\prebuilt\x64\VDJ Companion Source.dll`.
 
 Create a sanitized Windows release ZIP:
 

@@ -10,7 +10,9 @@ $Uv = Join-Path $Tools "uv\uv.exe"
 $VenvPython = Join-Path $Root ".venv\Scripts\python.exe"
 $BrowserRoot = Join-Path $Tools "playwright-browsers"
 $PluginRoot = Join-Path $Root "plugin\online-source"
-$PrebuiltPlugin = Join-Path $PluginRoot "prebuilt\x64\VdjCompanionSource.dll"
+$PluginFileName = "VDJ Companion Source.dll"
+$LegacyPluginFileName = "VdjCompanionSource.dll"
+$PrebuiltPlugin = Join-Path $PluginRoot "prebuilt\x64\$PluginFileName"
 
 function Write-Step([string]$Message) {
     Write-Host ""
@@ -55,7 +57,8 @@ if (-not $chromiumInstalled) {
 }
 
 $virtualDjHome = Get-VirtualDjHome
-$installedPlugin = Join-Path $virtualDjHome "Plugins64\OnlineSources\VdjCompanionSource.dll"
+$installedPlugin = Join-Path $virtualDjHome "Plugins64\OnlineSources\$PluginFileName"
+$legacyInstalledPlugin = Join-Path $virtualDjHome "Plugins64\OnlineSources\$LegacyPluginFileName"
 if (-not (Test-Path $PrebuiltPlugin)) {
     throw "Prebuilt plugin is missing: $PrebuiltPlugin"
 }
@@ -71,6 +74,10 @@ if ($installRequired) {
     Write-Host "Installed: $installedPlugin"
 } else {
     Write-Host "Already up to date: $installedPlugin"
+}
+if (Test-Path $legacyInstalledPlugin) {
+    Remove-Item -Force -LiteralPath $legacyInstalledPlugin
+    Write-Host "Removed legacy plugin: $legacyInstalledPlugin"
 }
 
 if ($SetupOnly) {

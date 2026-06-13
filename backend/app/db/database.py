@@ -17,9 +17,18 @@ class QueryCache:
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         async with aiosqlite.connect(self.database_path) as db:
             await db.executescript(self.schema_path.read_text(encoding="utf-8"))
+            now = int(time.time())
+            await db.execute(
+                "DELETE FROM query_cache WHERE created_at + ttl_seconds < ?", (now,)
+            )
+            await db.execute(
+                "DELETE FROM video_metadata WHERE last_seen < ?", (now - 30 * 86400,)
+            )
             await db.commit()
 
-    async def get(self, query: str) -> tuple[str, list[TrackSearchResult]] | None:
+    async def get(
+        self, query: str, limit: int | None = None
+    ) -> tuple[str, list[TrackSearchResult]] | None:
         normalized = self._normalize(query)
         async with aiosqlite.connect(self.database_path) as db:
             cursor = await db.execute(
@@ -41,7 +50,9 @@ class QueryCache:
             )
             for item in json.loads(row[1])
         ]
-        return row[0], results
+        if limit is not None and len(results) < limit:
+            return None
+        return row[0], results[:limit] if limit is not None else results
 
     async def put(
         self, query: str, provider: str, results: list[TrackSearchResult], ttl: int

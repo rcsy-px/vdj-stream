@@ -4,6 +4,10 @@
 #include <vector>
 #include <winhttp.h>
 
+#ifndef VDJ_COMPANION_VERSION
+#define VDJ_COMPANION_VERSION "dev"
+#endif
+
 namespace
 {
 constexpr wchar_t kHost[] = L"127.0.0.1";
@@ -29,10 +33,10 @@ HRESULT VDJ_API VdjCompanionSource::OnLoad()
 
 HRESULT VDJ_API VdjCompanionSource::OnGetPluginInfo(TVdjPluginInfo8* info)
 {
-    info->PluginName = "VDJ Companion YouTube";
+    info->PluginName = "VDJ Companion Source";
     info->Author = "rcsy-px";
     info->Description = "Local YouTube search and streaming companion";
-    info->Version = "0.1.0";
+    info->Version = VDJ_COMPANION_VERSION;
     info->Bitmap = nullptr;
     info->Flags = VDJFLAG_EPHEMERAL;
     return S_OK;
@@ -47,6 +51,7 @@ HRESULT VDJ_API VdjCompanionSource::OnSearch(
         &statusCode);
     if (statusCode != 200)
     {
+        tracksList->finish();
         return E_FAIL;
     }
 
@@ -79,6 +84,7 @@ HRESULT VDJ_API VdjCompanionSource::OnSearch(
             nullptr,
             length);
     }
+    tracksList->finish();
     return S_OK;
 }
 
@@ -91,7 +97,9 @@ HRESULT VDJ_API VdjCompanionSource::GetStreamUrl(
         &statusCode);
     if (statusCode != 200 || body.empty())
     {
-        errorMessage = "The companion backend could not resolve this track.";
+        errorMessage = statusCode == 0
+            ? "VDJ Companion backend is offline. Run START.bat."
+            : "VDJ Companion could not load this track. Check the local status page.";
         return E_FAIL;
     }
     url = body.c_str();

@@ -111,7 +111,7 @@ std::string VdjCompanionSource::HttpGet(
 {
     std::string body;
     HINTERNET session = WinHttpOpen(
-        L"VdjCompanionSource/0.1.0",
+        L"VdjCompanionSource/0.1.1",
         WINHTTP_ACCESS_TYPE_NO_PROXY,
         WINHTTP_NO_PROXY_NAME,
         WINHTTP_NO_PROXY_BYPASS,

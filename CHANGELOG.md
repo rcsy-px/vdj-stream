@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.1 - 2026-06-13
+
 - Added finite upstream stream timeouts and expired-URL retry coverage.
 - Improved search cache behavior for different result limits.
 - Added automatic yt-dlp update checks during setup and startup.

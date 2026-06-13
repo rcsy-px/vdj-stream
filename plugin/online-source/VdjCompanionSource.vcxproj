@@ -25,7 +25,7 @@
     <OutDir>$(ProjectDir)build\Release\</OutDir>
     <IntDir>$(ProjectDir)build\obj\</IntDir>
     <TargetName>VDJ Companion Source</TargetName>
-    <PluginVersion Condition="'$(PluginVersion)'==''">0.1.1</PluginVersion>
+    <PluginVersion Condition="'$(PluginVersion)'==''">0.1.2</PluginVersion>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

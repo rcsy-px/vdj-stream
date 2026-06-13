@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.2 - 2026-06-13
+
 - Added consent-based update notifications, GitHub release details, and per-version skipping to the control panel.
 
 ## 0.1.1 - 2026-06-13

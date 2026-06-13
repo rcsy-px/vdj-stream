@@ -2,7 +2,7 @@
 
 ```text
 VirtualDJ native browser
-  -> VdjCompanionSource.dll
+  -> VDJ Companion Source.dll
   -> FastAPI Online Source API
   -> SQLite query cache
   -> Chromium YouTube search

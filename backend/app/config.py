@@ -5,18 +5,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_VERSION = (PROJECT_ROOT / "VERSION").read_text(encoding="ascii").strip()
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=PROJECT_ROOT / ".env", extra="ignore")
 
     service_name: str = "vdj-youtube-companion"
-    version: str = "0.1.0"
+    version: str = PROJECT_VERSION
     host: str = "127.0.0.1"
     port: int = 8765
     public_base_url: str = "http://127.0.0.1:8765"
     search_timeout_seconds: float = 20.0
     resolve_timeout_seconds: float = 45.0
+    stream_connect_timeout_seconds: float = 10.0
+    stream_read_timeout_seconds: float = 30.0
     query_cache_ttl_seconds: int = 1800
     resolve_cache_ttl_seconds: int = 1200
     headless: bool = True

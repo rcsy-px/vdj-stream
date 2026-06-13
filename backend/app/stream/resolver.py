@@ -17,10 +17,16 @@ class YtDlpResolver:
         self.timeout_seconds = timeout_seconds
         self.ttl = ttl
         self._cache: dict[str, tuple[int, ResolvedStream]] = {}
+        self._locks: dict[str, asyncio.Lock] = {}
 
     async def resolve(self, video_id: str, force: bool = False) -> ResolvedStream:
         if not VIDEO_ID_PATTERN.fullmatch(video_id):
             raise ValueError("Invalid YouTube video ID")
+        lock = self._locks.setdefault(video_id, asyncio.Lock())
+        async with lock:
+            return await self._resolve_locked(video_id, force)
+
+    async def _resolve_locked(self, video_id: str, force: bool) -> ResolvedStream:
         cached = self._cache.get(video_id)
         if cached and cached[0] > int(time.time()) and not force:
             return cached[1]

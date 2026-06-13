@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -19,3 +19,6 @@ jobs:
           enable-cache: true
       - run: uv sync --locked
       - run: uv run pytest -q
+      - name: Build native plugin
+        shell: pwsh
+        run: ./plugin/online-source/build-and-install.ps1 -BuildOnly

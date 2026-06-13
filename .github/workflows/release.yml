@@ -9,9 +9,20 @@ permissions:
 
 jobs:
   release:
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     steps:
       - uses: actions/checkout@v4
+      - name: Verify tag matches project version
+        shell: pwsh
+        run: |
+          $tagVersion = "${{ github.ref_name }}".TrimStart("v")
+          $projectVersion = (Get-Content VERSION -Raw).Trim()
+          if ($tagVersion -ne $projectVersion) {
+            throw "Tag version $tagVersion does not match VERSION file $projectVersion."
+          }
+      - name: Build native plugin
+        shell: pwsh
+        run: ./plugin/online-source/build-and-install.ps1 -BuildOnly
       - name: Build sanitized release archive
         shell: pwsh
         run: |

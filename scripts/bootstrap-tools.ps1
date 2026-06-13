@@ -26,6 +26,14 @@ if (-not (Test-Path (Join-Path $Tools "uv\uv.exe"))) {
 }
 
 Download-File "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" (Join-Path $Tools "yt-dlp\yt-dlp.exe")
+$YtDlp = Join-Path $Tools "yt-dlp\yt-dlp.exe"
+if (Test-Path $YtDlp) {
+    Write-Host "Checking for yt-dlp updates"
+    & $YtDlp --update-to stable
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "yt-dlp update check failed. Continuing with the installed version."
+    }
+}
 
 $FfmpegZip = Join-Path $Cache "ffmpeg-release-essentials.zip"
 Download-File "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" $FfmpegZip

@@ -1,10 +1,19 @@
 param(
-    [ValidatePattern("^\d+\.\d+\.\d+([.-][A-Za-z0-9.-]+)?$")]
-    [string]$Version = "0.1.0"
+    [string]$Version = ""
 )
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
+$projectVersion = (Get-Content (Join-Path $Root "VERSION") -Raw).Trim()
+if (-not $Version) {
+    $Version = $projectVersion
+}
+if ($Version -notmatch "^\d+\.\d+\.\d+([.-][A-Za-z0-9.-]+)?$") {
+    throw "Invalid release version: $Version"
+}
+if ($Version -ne $projectVersion) {
+    throw "Release version $Version does not match VERSION file $projectVersion."
+}
 $Dist = Join-Path $Root "dist"
 $Stage = Join-Path $Dist "vdj-companion-$Version"
 $Archive = Join-Path $Dist "vdj-companion-$Version-windows-x64.zip"
@@ -32,6 +41,7 @@ $files = @(
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
+    "VERSION",
     "SECURITY.md",
     "pyproject.toml",
     "uv.lock"

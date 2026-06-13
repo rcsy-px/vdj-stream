@@ -51,16 +51,17 @@ app = FastAPI(title="VirtualDJ YouTube Companion", version=settings.version, lif
 
 def _health_payload() -> dict:
     chromium_installed = any(settings.playwright_browsers_path.glob("chromium-*"))
+    tools = {
+        "ytDlp": settings.ytdlp_exe.exists(),
+        "ffmpeg": (settings.ffmpeg_bin / "ffmpeg.exe").exists(),
+        "chromium": chromium_installed,
+        "playwrightBrowsersPath": str(settings.playwright_browsers_path),
+    }
     return {
-        "ok": True,
+        "ok": tools["ytDlp"] and tools["ffmpeg"] and tools["chromium"],
         "service": settings.service_name,
         "version": settings.version,
-        "tools": {
-            "ytDlp": settings.ytdlp_exe.exists(),
-            "ffmpeg": (settings.ffmpeg_bin / "ffmpeg.exe").exists(),
-            "chromium": chromium_installed,
-            "playwrightBrowsersPath": str(settings.playwright_browsers_path),
-        },
+        "tools": tools,
     }
 
 
@@ -69,7 +70,7 @@ async def status_page() -> HTMLResponse:
     health = _health_payload()
     tools = health["tools"]
     checks = (
-        ("Backend", health["ok"]),
+        ("Backend", True),
         ("yt-dlp", tools["ytDlp"]),
         ("FFmpeg", tools["ffmpeg"]),
         ("Chromium", tools["chromium"]),
@@ -140,7 +141,7 @@ async def search(
     q = q.strip()
     if len(q) < 2:
         raise HTTPException(422, "Search query must contain at least two non-space characters")
-    cached = await cache.get(q)
+    cached = await cache.get(q, limit)
     if cached:
         provider, results = cached
         return SearchResponse(
@@ -238,7 +239,12 @@ async def _youtube_stream(
 ):
     try:
         return await proxy_youtube_stream(
-            request, video_id, resolver, default_range=default_range
+            request,
+            video_id,
+            resolver,
+            default_range=default_range,
+            connect_timeout=settings.stream_connect_timeout_seconds,
+            read_timeout=settings.stream_read_timeout_seconds,
         )
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc

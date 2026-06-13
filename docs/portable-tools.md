@@ -11,7 +11,8 @@ All generated tools and runtimes remain inside the project:
 
 `START.bat` runs the idempotent setup flow. It downloads uv and yt-dlp from
 their official GitHub releases and the essentials FFmpeg build from gyan.dev.
-Existing downloads are left in place. It also creates `.venv`, syncs Python
+Existing downloads are left in place, while yt-dlp checks its stable channel
+for updates on startup. The setup also creates `.venv`, syncs Python
 dependencies, and installs Chromium locally.
 
 Scripts modify PATH and environment variables for their own process only. They

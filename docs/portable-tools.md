@@ -13,7 +13,9 @@ All generated tools and runtimes remain inside the project:
 their official GitHub releases and the essentials FFmpeg build from gyan.dev.
 Existing downloads are left in place, while yt-dlp checks its stable channel
 for updates on startup. The setup also creates `.venv`, syncs Python
-dependencies, and installs Chromium locally.
+dependencies, installs Chromium locally, starts the backend in the background,
+and opens the local control panel. Use `START-DEBUG.bat` for a visible backend
+console or `STOP.bat` as a fallback shutdown method.
 
 Scripts modify PATH and environment variables for their own process only. They
 do not require administrator rights or permanently alter the system PATH.

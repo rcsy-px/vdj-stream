@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import re
 
 from ..models import TrackSearchResult
 
@@ -21,8 +22,11 @@ def youtube_thumbnail_url(video_id: str) -> str:
 def duration_to_seconds(value: str | None) -> int | None:
     if not value:
         return None
+    match = re.search(r"\b\d{1,2}:\d{2}(?::\d{2})?\b", value)
+    if not match:
+        return None
     try:
-        parts = [int(part) for part in value.strip().split(":")]
+        parts = [int(part) for part in match.group(0).split(":")]
     except ValueError:
         return None
     if not 1 < len(parts) < 4:

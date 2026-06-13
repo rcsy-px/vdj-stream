@@ -25,7 +25,7 @@ you load them onto a deck.
 - Prebuilt x64 plugin; Visual Studio is not required for users
 - Local-only FastAPI backend bound to `127.0.0.1`
 - HTTP Range streaming for responsive analysis and seeking
-- Chromium search with yt-dlp fallback
+- yt-dlp metadata search with Chromium fallback
 - Lightweight local health page with no telemetry
 
 ## Install
@@ -46,10 +46,26 @@ you load them onto a deck.
 5. Open **Online Music → VDJ Companion Source** in VirtualDJ's browser.
 
 That is all. `START.bat` downloads only missing portable dependencies, installs
-the included plugin into VirtualDJ's active plugin folder, and starts the local
-backend. Running it again skips components that are already ready.
+the included plugin into VirtualDJ's active plugin folder, starts the local
+backend in the background, and opens its control panel. Running it again skips
+components that are already ready.
 
 The status page is available at <http://127.0.0.1:8765/>.
+It includes live logs and a button to shut down the backend. `STOP.bat` provides
+a fallback, while `START-DEBUG.bat` runs the backend in a visible console.
+
+### Verify downloads
+
+Each GitHub release includes SHA-256 checksum files for the release ZIP and the
+plugin DLL. After downloading them, calculate the local hashes:
+
+```powershell
+Get-FileHash -Algorithm SHA256 .\vdj-companion-<version>-windows-x64.zip
+Get-FileHash -Algorithm SHA256 ".\plugin\online-source\prebuilt\x64\VDJ Companion Source.dll"
+```
+
+Compare the resulting hashes with the matching `.sha256` files from the GitHub
+release. Matching hashes confirm that the downloaded files have not changed.
 
 ## How it works
 
@@ -88,7 +104,6 @@ See [Security Policy](SECURITY.md) before reporting a vulnerability.
 
 **Search or loading fails**
 
-- Keep the `START.bat` window open while using VirtualDJ.
 - Open <http://127.0.0.1:8765/> and check the component status.
 - YouTube or yt-dlp changes can temporarily affect extraction.
 
@@ -118,6 +133,9 @@ Create a sanitized Windows release ZIP:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\build-release.ps1
 ```
+
+The release script also creates SHA-256 checksum files for the ZIP and plugin
+DLL in `dist`.
 
 ## Support the project
 

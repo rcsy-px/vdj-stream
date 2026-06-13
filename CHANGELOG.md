@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added consent-based update notifications, GitHub release details, and per-version skipping to the control panel.
+
 ## 0.1.1 - 2026-06-13
 
 - Added finite upstream stream timeouts and expired-URL retry coverage.

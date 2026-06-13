@@ -16,6 +16,7 @@ from backend.app.search.base import duration_to_seconds, youtube_thumbnail_url
 from backend.app.stream.formats import ResolvedStream
 from backend.app.stream.naming import content_disposition, stream_filename, stream_url
 from backend.app.stream.proxy import proxy_youtube_stream
+from backend.app.update_checker import GitHubReleaseChecker, _version_tuple
 
 
 def test_health() -> None:
@@ -34,6 +35,15 @@ def test_status_page() -> None:
     assert 'src="/assets/logo.svg"' in response.text
     assert "Live logs" in response.text
     assert "Shutdown backend" in response.text
+    assert "Current version" in response.text
+    assert "Latest available" in response.text
+    assert "View update details on GitHub" in response.text
+    assert "Skip this update" in response.text
+    assert 'id="update-panel"' in response.text
+    assert 'updatePanel.classList.add("available")' in response.text
+    assert 'localStorage.setItem(skippedUpdateKey, version)' in response.text
+    assert 'getSkippedUpdate() === update.latestVersion' in response.text
+    assert 'latestVersion.addEventListener("click", restoreUpdate)' in response.text
     assert "Online Source backend status" not in response.text
     assert "https://github.com/rcsy-px" in response.text
     assert "https://ko-fi.com/rycsypx" in response.text
@@ -45,6 +55,107 @@ def test_status_logo() -> None:
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("image/svg+xml")
     assert "<svg" in response.text
+
+
+def test_update_status_endpoint(monkeypatch) -> None:
+    async def fake_check():
+        return {
+            "currentVersion": "0.1.1",
+            "latestVersion": "0.1.2",
+            "updateAvailable": True,
+            "releaseUrl": "https://github.com/rcsy-px/vdj-stream/releases/tag/v0.1.2",
+            "downloadUrl": "https://github.com/rcsy-px/vdj-stream/releases/download/v0.1.2/vdj-companion-0.1.2-windows-x64.zip",
+        }
+
+    monkeypatch.setattr("backend.app.main.update_checker.check", fake_check)
+    with TestClient(app) as client:
+        response = client.get("/api/update")
+    assert response.status_code == 200
+    assert response.json()["updateAvailable"] is True
+    assert response.json()["latestVersion"] == "0.1.2"
+
+
+def test_version_tuple() -> None:
+    assert _version_tuple("v1.2.3") == (1, 2, 3)
+    assert _version_tuple("not-a-version") is None
+
+
+@pytest.mark.asyncio
+async def test_update_checker_compares_versions_and_caches(monkeypatch) -> None:
+    checker = GitHubReleaseChecker("0.1.1", "rcsy-px/vdj-stream")
+    calls = 0
+
+    async def fake_fetch():
+        nonlocal calls
+        calls += 1
+        return {
+            "currentVersion": "0.1.1",
+            "latestVersion": "0.1.2",
+            "updateAvailable": True,
+            "releaseUrl": "https://github.com/rcsy-px/vdj-stream/releases/tag/v0.1.2",
+            "downloadUrl": None,
+        }
+
+    monkeypatch.setattr(checker, "_fetch", fake_fetch)
+    assert (await checker.check())["updateAvailable"] is True
+    assert (await checker.check())["latestVersion"] == "0.1.2"
+    assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_update_checker_caches_failure(monkeypatch) -> None:
+    checker = GitHubReleaseChecker("0.1.1", "rcsy-px/vdj-stream")
+    calls = 0
+
+    async def fake_fetch():
+        nonlocal calls
+        calls += 1
+        raise httpx.ConnectError("offline")
+
+    monkeypatch.setattr(checker, "_fetch", fake_fetch)
+    first = await checker.check()
+    second = await checker.check()
+    assert first["error"] == "Update check unavailable"
+    assert second == first
+    assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_update_checker_rejects_untrusted_release_urls(monkeypatch) -> None:
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict:
+            return {
+                "tag_name": "v0.1.2",
+                "html_url": "https://example.com/fake-release",
+                "assets": [
+                    {
+                        "name": "vdj-companion-0.1.2-windows-x64.zip",
+                        "browser_download_url": "https://example.com/fake.zip",
+                    }
+                ],
+            }
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url: str):
+            return FakeResponse()
+
+    monkeypatch.setattr(
+        "backend.app.update_checker.httpx.AsyncClient",
+        lambda **kwargs: FakeClient(),
+    )
+    result = await GitHubReleaseChecker("0.1.1", "rcsy-px/vdj-stream").check()
+    assert result["updateAvailable"] is True
+    assert result["releaseUrl"] is None
+    assert result["downloadUrl"] is None
 
 
 def test_live_log_handler_redacts_sensitive_values() -> None:

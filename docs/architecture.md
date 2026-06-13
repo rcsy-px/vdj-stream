@@ -5,8 +5,8 @@ VirtualDJ native browser
   -> VDJ Companion Source.dll
   -> FastAPI Online Source API
   -> SQLite query cache
-  -> Chromium YouTube search
-       fallback: yt-dlp search
+  -> yt-dlp metadata search
+       fallback: Chromium YouTube search
 
 VirtualDJ deck load
   -> Online Source GetStreamUrl

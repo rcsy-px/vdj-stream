@@ -30,15 +30,26 @@ EXTRACT_RESULTS_JS = r"""
         root?.querySelector("#channel-name a") ||
         root?.querySelector("a[href^='/@']");
       const imgEl = root?.querySelector("img");
-      const durationEl =
-        root?.querySelector("ytd-thumbnail-overlay-time-status-renderer span") ||
-        root?.querySelector(".badge-shape-wiz__text");
+      const durationCandidates = Array.from(root?.querySelectorAll(
+        "ytd-thumbnail-overlay-time-status-renderer, " +
+        "yt-thumbnail-overlay-badge-view-model, " +
+        ".badge-shape-wiz__text, .yt-badge-shape__text"
+      ) || []);
+      let durationText = null;
+      for (const candidate of durationCandidates) {
+        const text = (candidate.textContent || "").replace(/\s+/g, " ").trim();
+        const match = text.match(/\b\d{1,2}:\d{2}(?::\d{2})?\b/);
+        if (match) {
+          durationText = match[0];
+          break;
+        }
+      }
       items.push({
         videoId, title,
         channelName: (channelEl?.textContent || "").trim() || null,
         channelUrl: channelEl?.href || null,
         thumbnailUrl: imgEl?.src || imgEl?.getAttribute("data-thumb") || null,
-        durationText: (durationEl?.textContent || "").trim() || null
+        durationText
       });
     } catch (_) {}
   }
@@ -112,7 +123,7 @@ class ChromiumYouTubeSearchProvider(SearchProvider):
             )
             if len(results) >= limit:
                 break
-        logger.info("Chromium search returned %s results for %r", len(results), query)
+        logger.info("Chromium search returned %s results", len(results))
         return results
 
     async def close(self) -> None:

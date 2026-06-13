@@ -1,10 +1,15 @@
+import asyncio
+import json
 import logging
 import os
+import secrets
+import signal
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
 
 from .config import get_settings
 from .db.database import QueryCache
@@ -19,8 +24,10 @@ from .stream.resolver import YtDlpResolver
 settings = get_settings()
 settings.prepare_directories()
 os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", str(settings.playwright_browsers_path))
-configure_logging(settings)
+live_logs = configure_logging(settings)
 logger = logging.getLogger(__name__)
+started_at = int(time.time())
+shutdown_token = secrets.token_urlsafe(24)
 
 cache = QueryCache(settings.database_path, Path(__file__).parent / "db" / "schema.sql")
 browser_search = ChromiumYouTubeSearchProvider(
@@ -47,6 +54,12 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="VirtualDJ YouTube Companion", version=settings.version, lifespan=lifespan)
+LOGO_PATH = settings.data_dir.parent / "docs" / "assets" / "logo.svg"
+SEARCH_CACHE_NAMESPACE = "v2-ytdlp-primary"
+
+
+def _search_cache_key(query: str) -> str:
+    return f"{SEARCH_CACHE_NAMESPACE}:{query}"
 
 
 def _health_payload() -> dict:
@@ -61,6 +74,8 @@ def _health_payload() -> dict:
         "ok": tools["ytDlp"] and tools["ffmpeg"] and tools["chromium"],
         "service": settings.service_name,
         "version": settings.version,
+        "startedAt": started_at,
+        "uptimeSeconds": max(0, int(time.time()) - started_at),
         "tools": tools,
     }
 
@@ -90,12 +105,18 @@ async def status_page() -> HTMLResponse:
   <style>
     :root {{ color-scheme: dark; font-family: system-ui, sans-serif; }}
     body {{ margin: 0; min-height: 100vh; display: grid; place-items: center; background: #111318; color: #f4f5f7; }}
-    main {{ width: min(420px, calc(100% - 32px)); padding: 28px; background: #1a1d24; border: 1px solid #30343e; border-radius: 16px; box-sizing: border-box; }}
-    h1 {{ margin: 0 0 6px; font-size: 22px; }}
-    p {{ margin: 0 0 22px; color: #9ca3af; }}
+    main {{ width: min(760px, calc(100% - 32px)); padding: 28px; margin: 24px 0; background: #1a1d24; border: 1px solid #30343e; border-radius: 16px; box-sizing: border-box; }}
+    .logo {{ display: block; width: 100%; height: auto; margin: 0 0 22px; border-radius: 12px; }}
     ul {{ list-style: none; margin: 0; padding: 0; }}
     li {{ display: flex; justify-content: space-between; padding: 11px 0; border-top: 1px solid #30343e; }}
     .ok {{ color: #72db9c; }} .bad {{ color: #ff8585; }}
+    details {{ margin-top: 20px; border: 1px solid #30343e; border-radius: 10px; overflow: hidden; }}
+    summary {{ padding: 12px; cursor: pointer; font-weight: 650; }}
+    pre {{ height: 260px; overflow: auto; margin: 0; padding: 14px; background: #0c0e12; color: #cbd5e1; font: 12px/1.55 Consolas, monospace; white-space: pre-wrap; }}
+    .actions {{ display: flex; justify-content: flex-end; margin-top: 20px; }}
+    button {{ padding: 10px 14px; border: 1px solid #783b43; border-radius: 9px; background: #3b2025; color: #ffb4bd; cursor: pointer; font-weight: 650; }}
+    button:hover {{ background: #51272e; }} button:disabled {{ opacity: .55; cursor: wait; }}
+    #message {{ min-height: 20px; margin-top: 12px; color: #9ca3af; text-align: right; }}
     footer {{ margin-top: 20px; color: #737b8c; font-size: 13px; }}
     footer nav {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }}
     footer a {{ color: #aeb6c7; }}
@@ -106,11 +127,16 @@ async def status_page() -> HTMLResponse:
 </head>
 <body>
   <main>
-    <h1>VirtualDJ Companion</h1>
-    <p>Online Source backend status</p>
+    <img class="logo" src="/assets/logo.svg" alt="VDJ Companion">
     <ul>{rows}</ul>
+    <details>
+      <summary>Live logs</summary>
+      <pre id="logs">Connecting...</pre>
+    </details>
+    <div class="actions"><button id="shutdown" type="button">Shutdown backend</button></div>
+    <div id="message" role="status"></div>
     <footer>
-      Version {health["version"]} · <a href="/api/health">JSON health</a>
+      Version {health["version"]} · Uptime <span id="uptime">{health["uptimeSeconds"]}</span>s · <a href="/api/health">JSON health</a>
       <nav>
         <a class="social" href="https://github.com/rcsy-px" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.2.8-.5v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.6.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0C16.9 5 18 5.3 18 5.3c.6 1.5.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.8 5.4-5.5 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.6.8.5A11.5 11.5 0 0 0 12 .7Z"/></svg>
@@ -123,14 +149,94 @@ async def status_page() -> HTMLResponse:
       </nav>
     </footer>
   </main>
+  <script>
+    const shutdownToken = {json.dumps(shutdown_token)};
+    const logs = document.getElementById("logs");
+    const message = document.getElementById("message");
+    const shutdown = document.getElementById("shutdown");
+    let firstLog = true;
+    const events = new EventSource("/api/logs/stream");
+    events.onmessage = event => {{
+      if (firstLog) {{ logs.textContent = ""; firstLog = false; }}
+      logs.textContent += event.data + "\\n";
+      logs.scrollTop = logs.scrollHeight;
+    }};
+    events.onerror = () => {{
+      if (!firstLog) logs.textContent += "Log stream disconnected.\\n";
+    }};
+    setInterval(() => {{
+      const el = document.getElementById("uptime");
+      el.textContent = String(Number(el.textContent) + 1);
+    }}, 1000);
+    shutdown.addEventListener("click", async () => {{
+      if (!confirm("Shut down the VDJ Companion backend?")) return;
+      shutdown.disabled = true;
+      message.textContent = "Shutting down...";
+      try {{
+        const response = await fetch("/api/shutdown", {{
+          method: "POST",
+          headers: {{ "X-Shutdown-Token": shutdownToken }}
+        }});
+        if (!response.ok) throw new Error("Shutdown request failed");
+        events.close();
+        message.textContent = "Backend stopped. This tab can be closed.";
+      }} catch (error) {{
+        shutdown.disabled = false;
+        message.textContent = error.message;
+      }}
+    }});
+  </script>
 </body>
 </html>"""
     )
 
 
+@app.get("/assets/logo.svg", response_class=FileResponse, include_in_schema=False)
+async def logo() -> FileResponse:
+    return FileResponse(LOGO_PATH, media_type="image/svg+xml")
+
+
 @app.get("/api/health")
 async def health() -> dict:
     return _health_payload()
+
+
+@app.get("/api/logs/stream", include_in_schema=False)
+async def log_stream(request: Request) -> StreamingResponse:
+    async def events():
+        last_id = 0
+        while not await request.is_disconnected():
+            lines = live_logs.since(last_id)
+            if lines:
+                for last_id, line in lines:
+                    yield f"id: {last_id}\ndata: {line.replace(chr(10), ' ')}\n\n"
+            else:
+                yield ": keepalive\n\n"
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+def _is_loopback(request: Request) -> bool:
+    return request.client is not None and request.client.host in {"127.0.0.1", "::1", "testclient"}
+
+
+async def _stop_process() -> None:
+    await asyncio.sleep(0.25)
+    os.kill(os.getpid(), signal.SIGTERM)
+
+
+@app.post("/api/shutdown", include_in_schema=False)
+async def shutdown(request: Request) -> JSONResponse:
+    if not _is_loopback(request) or request.headers.get("x-shutdown-token") != shutdown_token:
+        raise HTTPException(403, "Shutdown is only available from the local control panel")
+    logger.info("Shutdown requested from local control panel")
+    asyncio.create_task(_stop_process())
+    return JSONResponse({"ok": True, "message": "Backend is shutting down"})
 
 
 @app.get("/api/search", response_model=SearchResponse)
@@ -141,18 +247,21 @@ async def search(
     q = q.strip()
     if len(q) < 2:
         raise HTTPException(422, "Search query must contain at least two non-space characters")
-    cached = await cache.get(q, limit)
+    cache_key = _search_cache_key(q)
+    cached = await cache.get(cache_key, limit)
     if cached:
         provider, results = cached
         return SearchResponse(
             query=q, provider=provider, cached=True, results=results
         )
     errors: list[str] = []
-    for provider in (browser_search, ytdlp_search):
+    for provider in (ytdlp_search, browser_search):
         try:
             results = await provider.search(q, limit)
             if results:
-                await cache.put(q, provider.name, results, settings.query_cache_ttl_seconds)
+                await cache.put(
+                    cache_key, provider.name, results, settings.query_cache_ttl_seconds
+                )
                 return SearchResponse(
                     query=q, provider=provider.name, cached=False, results=results
                 )

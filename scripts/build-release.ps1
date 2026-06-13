@@ -18,6 +18,8 @@ $Dist = Join-Path $Root "dist"
 $Stage = Join-Path $Dist "vdj-companion-$Version"
 $Archive = Join-Path $Dist "vdj-companion-$Version-windows-x64.zip"
 $Checksum = "$Archive.sha256"
+$PluginDll = Join-Path $Root "plugin\online-source\prebuilt\x64\VDJ Companion Source.dll"
+$PluginChecksum = Join-Path $Dist "VDJ Companion Source.dll.sha256"
 
 $resolvedRoot = [System.IO.Path]::GetFullPath($Root)
 $resolvedDist = [System.IO.Path]::GetFullPath($Dist)
@@ -34,10 +36,18 @@ if (Test-Path $Archive) {
 if (Test-Path $Checksum) {
     Remove-Item -Force -LiteralPath $Checksum
 }
+if (Test-Path $PluginChecksum) {
+    Remove-Item -Force -LiteralPath $PluginChecksum
+}
+if (-not (Test-Path $PluginDll)) {
+    throw "Plugin DLL not found: $PluginDll"
+}
 New-Item -ItemType Directory -Force -Path $Stage | Out-Null
 
 $files = @(
     "START.bat",
+    "START-DEBUG.bat",
+    "STOP.bat",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
@@ -49,6 +59,7 @@ $files = @(
 $scripts = @(
     "bootstrap-tools.ps1",
     "run-backend.bat",
+    "start-backend.ps1",
     "setup-and-start.ps1",
     "stop-backend.ps1"
 )
@@ -87,5 +98,8 @@ foreach ($script in $scripts) {
 Compress-Archive -Path (Join-Path $Stage "*") -DestinationPath $Archive
 $hash = (Get-FileHash -Algorithm SHA256 $Archive).Hash.ToLowerInvariant()
 Set-Content -Encoding ascii -Path $Checksum -Value "$hash  $(Split-Path -Leaf $Archive)"
+$pluginHash = (Get-FileHash -Algorithm SHA256 $PluginDll).Hash.ToLowerInvariant()
+Set-Content -Encoding ascii -Path $PluginChecksum -Value "$pluginHash  $(Split-Path -Leaf $PluginDll)"
 Write-Host "Release ready: $Archive"
 Write-Host "Checksum ready: $Checksum"
+Write-Host "Plugin checksum ready: $PluginChecksum"

@@ -84,5 +84,5 @@ if ($SetupOnly) {
     Write-Step "Setup complete"
 } else {
     Write-Step "Starting backend"
-    & (Join-Path $PSScriptRoot "run-backend.bat")
+    & (Join-Path $PSScriptRoot "start-backend.ps1")
 }

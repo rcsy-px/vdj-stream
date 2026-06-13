@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     stream_read_timeout_seconds: float = 30.0
     query_cache_ttl_seconds: int = 1800
     resolve_cache_ttl_seconds: int = 1200
+    update_check_cache_ttl_seconds: int = 21600
+    update_check_timeout_seconds: float = 5.0
+    github_repository: str = "rcsy-px/vdj-stream"
     headless: bool = True
 
     data_dir: Path = PROJECT_ROOT / "data"

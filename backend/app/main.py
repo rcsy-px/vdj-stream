@@ -20,6 +20,7 @@ from .search.ytdlp_search import YtDlpSearchProvider
 from .stream.proxy import proxy_youtube_stream
 from .stream.naming import stream_url
 from .stream.resolver import YtDlpResolver
+from .update_checker import GitHubReleaseChecker
 
 settings = get_settings()
 settings.prepare_directories()
@@ -38,6 +39,12 @@ resolver = YtDlpResolver(
     settings.ytdlp_exe,
     settings.resolve_timeout_seconds,
     settings.resolve_cache_ttl_seconds,
+)
+update_checker = GitHubReleaseChecker(
+    settings.version,
+    settings.github_repository,
+    settings.update_check_cache_ttl_seconds,
+    settings.update_check_timeout_seconds,
 )
 
 
@@ -110,6 +117,24 @@ async def status_page() -> HTMLResponse:
     ul {{ list-style: none; margin: 0; padding: 0; }}
     li {{ display: flex; justify-content: space-between; padding: 11px 0; border-top: 1px solid #30343e; }}
     .ok {{ color: #72db9c; }} .bad {{ color: #ff8585; }}
+    .update {{ margin-top: 20px; padding: 14px; border: 1px solid #30343e; border-radius: 10px; transition: border-color .2s, background .2s, box-shadow .2s; }}
+    .update.available {{ border-color: #3a9b61; background: linear-gradient(135deg, rgba(40, 120, 72, .2), rgba(26, 29, 36, .45)); box-shadow: 0 0 0 1px rgba(80, 210, 125, .1), 0 12px 32px rgba(0, 0, 0, .18); }}
+    .update h2 {{ margin: 0 0 12px; font-size: 16px; }}
+    .update-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }}
+    .version {{ padding: 10px; background: #14171d; border-radius: 8px; }}
+    .version span {{ display: block; color: #8f98a8; font-size: 12px; margin-bottom: 4px; }}
+    .update.available #latest-version {{ display: inline-block; padding: 3px 8px; border-radius: 999px; background: #245c39; color: #b8f7ce; }}
+    .update.skipped #latest-version {{ display: inline-block; padding: 3px 8px; border-radius: 999px; background: #245c39; color: #b8f7ce; cursor: pointer; }}
+    .update.skipped #latest-version:hover {{ background: #2c7246; }}
+    .update.skipped #update-status, .update.skipped .update-actions {{ display: none; }}
+    #update-status {{ margin: 12px 0 0; color: #9ca3af; }}
+    .update.available #update-status {{ color: #9ce3b6; font-weight: 650; }}
+    .update-actions {{ display: none; gap: 10px; margin-top: 12px; }}
+    .update.available .update-actions {{ display: flex; }}
+    .release-link {{ flex: 1; padding: 10px 14px; border-radius: 9px; background: #245c39; color: #b8f7ce; text-decoration: none; font-weight: 650; text-align: center; }}
+    .release-link:hover {{ background: #2c7246; }}
+    .skip-update {{ border-color: #46505f; background: #252a33; color: #cbd5e1; }}
+    .skip-update:hover {{ background: #303641; }}
     details {{ margin-top: 20px; border: 1px solid #30343e; border-radius: 10px; overflow: hidden; }}
     summary {{ padding: 12px; cursor: pointer; font-weight: 650; }}
     pre {{ height: 260px; overflow: auto; margin: 0; padding: 14px; background: #0c0e12; color: #cbd5e1; font: 12px/1.55 Consolas, monospace; white-space: pre-wrap; }}
@@ -129,6 +154,18 @@ async def status_page() -> HTMLResponse:
   <main>
     <img class="logo" src="/assets/logo.svg" alt="VDJ Companion">
     <ul>{rows}</ul>
+    <section id="update-panel" class="update" aria-labelledby="update-title">
+      <h2 id="update-title">Updates</h2>
+      <div class="update-grid">
+        <div class="version"><span>Current version</span><strong>{health["version"]}</strong></div>
+        <div class="version"><span>Latest available</span><strong id="latest-version">Checking...</strong></div>
+      </div>
+      <p id="update-status">Checking GitHub releases...</p>
+      <div class="update-actions">
+        <a id="view-update" class="release-link" target="_blank" rel="noopener noreferrer">View update details on GitHub</a>
+        <button id="skip-update" class="skip-update" type="button">Skip this update</button>
+      </div>
+    </section>
     <details>
       <summary>Live logs</summary>
       <pre id="logs">Connecting...</pre>
@@ -154,6 +191,37 @@ async def status_page() -> HTMLResponse:
     const logs = document.getElementById("logs");
     const message = document.getElementById("message");
     const shutdown = document.getElementById("shutdown");
+    const latestVersion = document.getElementById("latest-version");
+    const updatePanel = document.getElementById("update-panel");
+    const updateStatus = document.getElementById("update-status");
+    const viewUpdate = document.getElementById("view-update");
+    const skipUpdate = document.getElementById("skip-update");
+    const skippedUpdateKey = "vdj-companion-skipped-update";
+    let availableUpdate = null;
+    const getSkippedUpdate = () => {{
+      try {{ return localStorage.getItem(skippedUpdateKey); }} catch (_) {{ return null; }}
+    }};
+    const setSkippedUpdate = version => {{
+      try {{ localStorage.setItem(skippedUpdateKey, version); }} catch (_) {{}}
+    }};
+    const clearSkippedUpdate = () => {{
+      try {{ localStorage.removeItem(skippedUpdateKey); }} catch (_) {{}}
+    }};
+    const showAvailableUpdate = update => {{
+      updatePanel.classList.remove("skipped");
+      updatePanel.classList.add("available");
+      latestVersion.removeAttribute("role");
+      latestVersion.removeAttribute("tabindex");
+      updateStatus.textContent = `Version ${{update.latestVersion}} is available. Review the release details before downloading.`;
+      viewUpdate.href = update.releaseUrl;
+    }};
+    const showSkippedUpdate = update => {{
+      updatePanel.classList.remove("available");
+      updatePanel.classList.add("skipped");
+      latestVersion.setAttribute("role", "button");
+      latestVersion.setAttribute("tabindex", "0");
+      latestVersion.setAttribute("aria-label", `Show update ${{update.latestVersion}} details`);
+    }};
     let firstLog = true;
     const events = new EventSource("/api/logs/stream");
     events.onmessage = event => {{
@@ -168,6 +236,41 @@ async def status_page() -> HTMLResponse:
       const el = document.getElementById("uptime");
       el.textContent = String(Number(el.textContent) + 1);
     }}, 1000);
+    fetch("/api/update")
+      .then(response => response.json())
+      .then(update => {{
+        latestVersion.textContent = update.latestVersion || "Unavailable";
+        if (update.updateAvailable && update.releaseUrl) {{
+          availableUpdate = update;
+          if (getSkippedUpdate() === update.latestVersion) showSkippedUpdate(update);
+          else showAvailableUpdate(update);
+        }} else if (update.error) {{
+          updateStatus.textContent = "Update check is temporarily unavailable.";
+        }} else {{
+          updateStatus.textContent = "You are running the latest version.";
+        }}
+      }})
+      .catch(() => {{
+        latestVersion.textContent = "Unavailable";
+        updateStatus.textContent = "Update check is temporarily unavailable.";
+      }});
+    skipUpdate.addEventListener("click", () => {{
+      if (!availableUpdate) return;
+      setSkippedUpdate(availableUpdate.latestVersion);
+      showSkippedUpdate(availableUpdate);
+    }});
+    const restoreUpdate = () => {{
+      if (!availableUpdate || !updatePanel.classList.contains("skipped")) return;
+      clearSkippedUpdate();
+      showAvailableUpdate(availableUpdate);
+    }};
+    latestVersion.addEventListener("click", restoreUpdate);
+    latestVersion.addEventListener("keydown", event => {{
+      if (event.key === "Enter" || event.key === " ") {{
+        event.preventDefault();
+        restoreUpdate();
+      }}
+    }});
     shutdown.addEventListener("click", async () => {{
       if (!confirm("Shut down the VDJ Companion backend?")) return;
       shutdown.disabled = true;
@@ -199,6 +302,11 @@ async def logo() -> FileResponse:
 @app.get("/api/health")
 async def health() -> dict:
     return _health_payload()
+
+
+@app.get("/api/update", include_in_schema=False)
+async def update_status() -> dict:
+    return await update_checker.check()
 
 
 @app.get("/api/logs/stream", include_in_schema=False)

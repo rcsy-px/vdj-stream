@@ -27,6 +27,7 @@ you load them onto a deck.
 - HTTP Range streaming for responsive analysis and seeking
 - yt-dlp metadata search with Chromium fallback
 - Lightweight local health page with no telemetry
+- Consent-based GitHub release update notifications
 
 ## Install
 
@@ -52,7 +53,11 @@ components that are already ready.
 
 The status page is available at <http://127.0.0.1:8765/>.
 It includes live logs and a button to shut down the backend. `STOP.bat` provides
-a fallback, while `START-DEBUG.bat` runs the backend in a visible console.
+a fallback, while `START-DEBUG.bat` runs the backend in a visible console. The
+page also checks GitHub releases for newer versions and links to the release
+details when an update is available. A specific update can be skipped
+locally; its version badge remains clickable, and any newer release is shown
+prominently again.
 
 ### Verify downloads
 
@@ -90,7 +95,12 @@ More detail is available in [Architecture](docs/architecture.md) and
 VDJ Companion runs locally and listens only on `127.0.0.1`. It includes no
 telemetry and does not require an account of its own. Runtime logs, caches,
 downloaded tools, and browser data remain local and are excluded from source
-control and release packages.
+control and release packages. Opening the local control panel sends a
+rate-limited request to GitHub's Releases API to read the latest available
+version. If an update is skipped, only that version number is stored in the
+browser's local storage. VDJ Companion never downloads or installs updates
+automatically; updating remains a fully manual user decision through the linked
+GitHub release page.
 
 See [Security Policy](SECURITY.md) before reporting a vulnerability.
 

@@ -15,7 +15,7 @@ dependencies = [
   "playwright>=1.50",
   "httpx>=0.28",
   "pydantic>=2.10",
-  "pydantic-settings>=2.7",
+  "pydantic-settings>=2.14.2",
   "aiosqlite>=0.20",
   "python-dotenv>=1.0",
 ]

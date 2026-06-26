@@ -10,7 +10,7 @@ authors = [
 ]
 keywords = ["virtualdj", "youtube", "dj", "online-source"]
 dependencies = [
-  "fastapi>=0.115",
+  "fastapi>=0.138.1",
   "uvicorn[standard]>=0.34",
   "playwright>=1.50",
   "httpx>=0.28",

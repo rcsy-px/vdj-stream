@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/companion-bot.png" alt="VDJ Companion headphone robot" width="180">
+  <img src="docs/assets/companion-bot.svg" alt="VDJ Companion headphone robot" width="180">
 </p>
 
 <h1 align="center">VDJ Companion</h1>

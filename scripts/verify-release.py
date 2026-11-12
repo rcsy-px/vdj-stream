@@ -16,6 +16,7 @@ required = {
     "START.bat", "STOP.bat", "VERSION", "README.md", "CONTRIBUTING.md", "uv.lock",
     "backend/app/web/index.html", "backend/app/web/app.js", "backend/app/web/style.css",
     "docs/assets/companion-bot.png", "scripts/download-tools.ps1", "scripts/setup-and-start.ps1",
+    "docs/assets/companion-bot.svg",
     "plugin/online-source/prebuilt/x64/VDJ Companion Source.dll",
     "plugin/online-source/prebuilt/x64/build-info.json",
 }
@@ -38,7 +39,7 @@ with zipfile.ZipFile(archive) as package, tempfile.TemporaryDirectory(prefix="vd
 from fastapi.testclient import TestClient
 from backend.app.main import app
 with TestClient(app) as client:
-    for path in ('/', '/static/app.js', '/static/style.css', '/assets/logo.png', '/api/health'):
+    for path in ('/', '/static/app.js', '/static/style.css', '/assets/logo.svg', '/api/health'):
         response = client.get(path)
         assert response.status_code == 200, (path, response.status_code)
     assert client.post('/api/diagnostics').status_code == 403

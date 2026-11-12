@@ -32,7 +32,7 @@ def test_status_page() -> None:
     with TestClient(app) as client:
         response = client.get("/")
     assert response.status_code == 200
-    assert 'src="/assets/logo.png"' in response.text
+    assert 'src="/assets/logo.svg"' in response.text
     assert "Live logs" in response.text
     assert "Shutdown backend" in response.text
     assert "Current version" in response.text

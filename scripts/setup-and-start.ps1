@@ -39,22 +39,17 @@ $env:PLAYWRIGHT_BROWSERS_PATH = $BrowserRoot
 
 Write-Step "Checking Python environment"
 if (-not (Test-Path $VenvPython)) {
-    & $Uv python install 3.12
+    & $Uv python install 3.12 --no-bin --no-registry
     if ($LASTEXITCODE -ne 0) { throw "Python installation failed." }
-    & $Uv venv
+    & $Uv venv --python 3.12
     if ($LASTEXITCODE -ne 0) { throw "Virtual environment creation failed." }
 }
-& $Uv sync
+& $Uv sync --locked
 if ($LASTEXITCODE -ne 0) { throw "Python dependency sync failed." }
 
-$chromiumInstalled = Get-ChildItem $BrowserRoot -Directory -Filter "chromium-*" -ErrorAction SilentlyContinue
-if (-not $chromiumInstalled) {
-    Write-Step "Installing Playwright Chromium"
-    & $Uv run python -m playwright install chromium
-    if ($LASTEXITCODE -ne 0) { throw "Playwright Chromium installation failed." }
-} else {
-    Write-Host "Already present: Playwright Chromium"
-}
+Write-Step "Checking the exact Playwright Chromium revision"
+& $VenvPython -m playwright install chromium
+if ($LASTEXITCODE -ne 0) { throw "Playwright Chromium installation failed." }
 
 $virtualDjHome = Get-VirtualDjHome
 $installedPlugin = Join-Path $virtualDjHome "Plugins64\OnlineSources\$PluginFileName"

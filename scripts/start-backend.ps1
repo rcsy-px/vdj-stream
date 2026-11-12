@@ -8,6 +8,13 @@ $Root = Split-Path -Parent $PSScriptRoot
 $Python = Join-Path $Root ".venv\Scripts\python.exe"
 $Url = "http://127.0.0.1:$Port"
 
+function Open-ControlPanel {
+    if (-not $NoBrowser) {
+        try { Start-Process "$Url/" }
+        catch { Write-Warning "Backend is running. Open $Url/ manually; the browser could not be launched." }
+    }
+}
+
 $listener = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
     Select-Object -First 1
 if ($listener) {
@@ -16,9 +23,7 @@ if ($listener) {
         throw "Port $Port is already used by another application."
     }
     Write-Host "Backend is already running."
-    if (-not $NoBrowser) {
-        Start-Process $Url
-    }
+    Open-ControlPanel
     exit 0
 }
 
@@ -46,13 +51,12 @@ for ($attempt = 0; $attempt -lt 60; $attempt++) {
     Start-Sleep -Milliseconds 250
     try {
         Invoke-RestMethod "$Url/api/health" -TimeoutSec 2 | Out-Null
-        Write-Host "Backend ready: $Url/"
-        if (-not $NoBrowser) {
-            Start-Process "$Url/"
-        }
-        exit 0
     } catch {
+        continue
     }
+    Write-Host "Backend ready: $Url/"
+    Open-ControlPanel
+    exit 0
 }
 
 throw "Backend did not become ready. Check data\logs\backend-stderr.log."

@@ -584,10 +584,11 @@ wheels = [
 
 [[package]]
 name = "vdj-youtube-companion"
-version = "0.1.2"
+version = "0.2.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aiosqlite" },
+    { name = "anyio" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "playwright" },
@@ -606,6 +607,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.20" },
+    { name = "anyio", specifier = ">=4.8" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "playwright", specifier = ">=1.50" },

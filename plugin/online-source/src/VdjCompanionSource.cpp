@@ -12,6 +12,8 @@ namespace
 {
 constexpr wchar_t kHost[] = L"127.0.0.1";
 constexpr INTERNET_PORT kPort = 8765;
+// Backend enforces a 55-second whole-request deadline.
+constexpr int kBackendTimeoutMs = 65000;
 
 std::vector<std::string> Split(const std::string& value, char separator)
 {
@@ -51,6 +53,7 @@ HRESULT VDJ_API VdjCompanionSource::OnSearch(
         &statusCode);
     if (statusCode != 200)
     {
+        OutputDebugStringA("VDJ Companion search failed. Check Live logs in the local control panel.\n");
         tracksList->finish();
         return E_FAIL;
     }
@@ -92,14 +95,20 @@ HRESULT VDJ_API VdjCompanionSource::GetStreamUrl(
     const char* uniqueId, IVdjString& url, IVdjString& errorMessage)
 {
     DWORD statusCode = 0;
+    DWORD networkError = 0;
     const std::string body = HttpGet(
         L"/api/vdj/source/stream/" + UrlEncode(uniqueId),
-        &statusCode);
+        &statusCode, &networkError);
     if (statusCode != 200 || body.empty())
     {
-        errorMessage = statusCode == 0
-            ? "VDJ Companion backend is offline. Run START.bat."
-            : "VDJ Companion could not load this track. Check the local status page.";
+        if (networkError == ERROR_WINHTTP_TIMEOUT || statusCode == 504)
+            errorMessage = "Track loading timed out. Check your connection and try again.";
+        else if (statusCode == 503)
+            errorMessage = "YouTube engine is busy or updating. Try again in a moment.";
+        else if (statusCode == 0)
+            errorMessage = "VDJ Companion backend is unreachable. Run START.bat and check the control panel.";
+        else
+            errorMessage = "Could not load this track. Run diagnostics or update yt-dlp in the control panel.";
         return E_FAIL;
     }
     url = body.c_str();
@@ -107,21 +116,24 @@ HRESULT VDJ_API VdjCompanionSource::GetStreamUrl(
 }
 
 std::string VdjCompanionSource::HttpGet(
-    const std::wstring& path, DWORD* statusCode)
+    const std::wstring& path, DWORD* statusCode, DWORD* networkError)
 {
     std::string body;
+    *statusCode = 0;
+    if (networkError) *networkError = 0;
     HINTERNET session = WinHttpOpen(
-        L"VdjCompanionSource/0.1.2",
+        L"VdjCompanionSource",
         WINHTTP_ACCESS_TYPE_NO_PROXY,
         WINHTTP_NO_PROXY_NAME,
         WINHTTP_NO_PROXY_BYPASS,
         0);
     if (!session)
     {
+        if (networkError) *networkError = GetLastError();
         return body;
     }
 
-    WinHttpSetTimeouts(session, 2000, 2000, 30000, 30000);
+    WinHttpSetTimeouts(session, 2000, 2000, kBackendTimeoutMs, kBackendTimeoutMs);
     HINTERNET connection = WinHttpConnect(session, kHost, kPort, 0);
     HINTERNET request = connection
         ? WinHttpOpenRequest(
@@ -145,16 +157,31 @@ std::string VdjCompanionSource::HttpGet(
             WINHTTP_NO_HEADER_INDEX);
 
         DWORD available = 0;
-        while (WinHttpQueryDataAvailable(request, &available) && available > 0)
+        while (true)
         {
+            if (!WinHttpQueryDataAvailable(request, &available))
+            {
+                if (networkError) *networkError = GetLastError();
+                *statusCode = 0;
+                body.clear();
+                break;
+            }
+            if (available == 0) break;
             std::vector<char> buffer(available);
             DWORD read = 0;
             if (!WinHttpReadData(request, buffer.data(), available, &read))
             {
+                if (networkError) *networkError = GetLastError();
+                *statusCode = 0;
+                body.clear();
                 break;
             }
             body.append(buffer.data(), read);
         }
+    }
+    else if (networkError)
+    {
+        *networkError = GetLastError();
     }
 
     if (request)

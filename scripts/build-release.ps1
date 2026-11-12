@@ -23,8 +23,20 @@ $PluginChecksum = Join-Path $Dist "VDJ Companion Source.dll.sha256"
 
 $resolvedRoot = [System.IO.Path]::GetFullPath($Root)
 $resolvedDist = [System.IO.Path]::GetFullPath($Dist)
-if (-not $resolvedDist.StartsWith($resolvedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+$buildInfo = Get-Content (Join-Path (Split-Path $PluginDll) "build-info.json") -Raw | ConvertFrom-Json
+if ($buildInfo.version -ne $Version -or $buildInfo.sha256 -ne (Get-FileHash -Algorithm SHA256 $PluginDll).Hash.ToLowerInvariant()) {
+    throw "Rebuild the native plugin before packaging this version."
+}
+foreach ($source in $buildInfo.sources.PSObject.Properties) {
+    if ($source.Value -ne (Get-FileHash -Algorithm SHA256 (Join-Path $Root $source.Name)).Hash.ToLowerInvariant()) {
+        throw "Native plugin source changed. Rebuild before packaging: $($source.Name)"
+    }
+}
+if (-not $resolvedDist.StartsWith($resolvedRoot + [IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw "Refusing to prepare a release outside the project directory."
+}
+if (-not ([IO.Path]::GetFullPath($Stage)).StartsWith($resolvedDist + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Invalid release staging path."
 }
 
 if (Test-Path $Stage) {
@@ -49,6 +61,7 @@ $files = @(
     "START-DEBUG.bat",
     "STOP.bat",
     "README.md",
+    "CONTRIBUTING.md",
     "LICENSE",
     "CHANGELOG.md",
     "VERSION",
@@ -58,6 +71,7 @@ $files = @(
 )
 $scripts = @(
     "bootstrap-tools.ps1",
+    "download-tools.ps1",
     "run-backend.bat",
     "start-backend.ps1",
     "setup-and-start.ps1",

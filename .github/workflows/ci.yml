@@ -22,3 +22,8 @@ jobs:
       - name: Build native plugin
         shell: pwsh
         run: ./plugin/online-source/build-and-install.ps1 -BuildOnly
+      - name: Build and verify release archive
+        shell: pwsh
+        run: |
+          ./scripts/build-release.ps1
+          uv run python scripts/verify-release.py

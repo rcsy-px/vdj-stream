@@ -1,0 +1,12 @@
+{
+  "sha256": "723bbe6cb8df59e52f257a6e465db9f8256852bdc77561c927823dec851ab933",
+  "sources": {
+    "plugin/online-source/src/VdjCompanionSource.h": "2bb0635fe91ca48f3ae8b21a6376d1f22a5c764aff92d16d8e12c6199091390e",
+    "plugin/online-source/VdjCompanionSource.vcxproj": "445a01d68f30656e64a64b1db2d4fb503e6d1d8f2eb7fcb318f5b786a0c67b4f",
+    "plugin/online-source/src/Main.cpp": "c06e4ab07d3441d085fdb7078311fd69cffc020820f41eab501e12ff3d51a9d5",
+    "plugin/sdk/vdjOnlineSource.h": "8f61be0ace58e17b7ff357186c9fc370749ff2b06c25ec6b71f9f3846d735430",
+    "plugin/online-source/src/VdjCompanionSource.cpp": "01d78d136a4b6fd58fa192c36d039e164ca5882dcb788fcaaf2de8f106b7ba0a",
+    "plugin/sdk/vdjPlugin8.h": "454766a77e333f13390372019c5c0191c303cde95a645fc0e19a596bb1f3e7bb"
+  },
+  "version": "0.2.0"
+}

@@ -14,6 +14,6 @@ public:
         const char* uniqueId, IVdjString& url, IVdjString& errorMessage) override;
 
 private:
-    std::string HttpGet(const std::wstring& path, DWORD* statusCode);
+    std::string HttpGet(const std::wstring& path, DWORD* statusCode, DWORD* networkError = nullptr);
     static std::wstring UrlEncode(const char* value);
 };

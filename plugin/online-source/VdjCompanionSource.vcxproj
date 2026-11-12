@@ -16,7 +16,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v145</PlatformToolset>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -25,7 +25,7 @@
     <OutDir>$(ProjectDir)build\Release\</OutDir>
     <IntDir>$(ProjectDir)build\obj\</IntDir>
     <TargetName>VDJ Companion Source</TargetName>
-    <PluginVersion Condition="'$(PluginVersion)'==''">0.1.2</PluginVersion>
+    <PluginVersion Condition="'$(PluginVersion)'==''">0.2.0</PluginVersion>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

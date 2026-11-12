@@ -1,5 +1,6 @@
 param(
-    [switch]$BuildOnly
+    [switch]$BuildOnly,
+    [string]$MSBuildPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -9,10 +10,13 @@ $projectRoot = Split-Path -Parent (Split-Path -Parent $projectDir)
 $pluginVersion = (Get-Content (Join-Path $projectRoot "VERSION") -Raw).Trim()
 $projectFile = Join-Path $projectDir "VdjCompanionSource.vcxproj"
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$msbuild = $MSBuildPath
+if (-not $msbuild -and (Test-Path $vswhere)) {
 $msbuild = & $vswhere -latest -products * `
     -requires Microsoft.Component.MSBuild `
     -find "MSBuild\**\Bin\MSBuild.exe" |
     Select-Object -First 1
+}
 
 if (-not $msbuild) {
     throw "MSBuild with the C++ workload was not found."
@@ -30,6 +34,13 @@ $prebuiltDir = Join-Path $projectDir "prebuilt\x64"
 $prebuiltDll = Join-Path $prebuiltDir $pluginFileName
 New-Item -ItemType Directory -Force -Path $prebuiltDir | Out-Null
 Copy-Item -Force $dll $prebuiltDll
+$sources = @{}
+@(Get-ChildItem (Join-Path $projectDir "src") -File; Get-Item $projectFile; Get-ChildItem (Join-Path $projectRoot "plugin\sdk") -File) | ForEach-Object {
+    $relative = $_.FullName.Substring($projectRoot.Length + 1).Replace('\', '/')
+    $sources[$relative] = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant()
+}
+@{version=$pluginVersion; sha256=(Get-FileHash -Algorithm SHA256 $prebuiltDll).Hash.ToLowerInvariant(); sources=$sources} |
+    ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $prebuiltDir "build-info.json")
 $legacyPrebuiltDll = Join-Path $prebuiltDir $legacyPluginFileName
 if (Test-Path $legacyPrebuiltDll) {
     Remove-Item -Force -LiteralPath $legacyPrebuiltDll

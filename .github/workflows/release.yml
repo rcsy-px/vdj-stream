@@ -36,10 +36,19 @@ jobs:
           ./scripts/build-release.ps1 -Version $version
       - name: Verify packaged application
         run: uv run python scripts/verify-release.py
-      - name: Create GitHub release
+      - name: Publish GitHub release assets
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $version = (Get-Content VERSION -Raw).Trim()
-          gh release create "${{ github.ref_name }}" dist/*.zip dist/*.sha256 --verify-tag --title "VDJ Companion $version" --notes-file "docs/releases/$version.md"
+          $tag = "${{ github.ref_name }}"
+          gh release view $tag --json id --jq .id 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag dist/*.zip dist/*.sha256 --clobber
+            if ($LASTEXITCODE -ne 0) { throw "Release asset replacement failed." }
+            gh release edit $tag --title "VDJ Companion $version" --notes-file "docs/releases/$version.md"
+          } else {
+            gh release create $tag dist/*.zip dist/*.sha256 --verify-tag --title "VDJ Companion $version" --notes-file "docs/releases/$version.md"
+          }
+          if ($LASTEXITCODE -ne 0) { throw "Release publication failed." }

@@ -2,6 +2,11 @@
 
 ## 0.2.0 - 2026-11-12
 
+Package revised on 2026-11-12 without a version bump:
+
+- Tightened the logo framing in the control panel and README while preserving the original artwork.
+- Bypass HTTP caches when fetching release versions and prevent browsers from storing update-status responses. Manual checks refresh both application and yt-dlp data while automatic checks remain rate-limited.
+
 - Rebuilt the local control panel with a responsive retro metal skin and an original headphone robot logo.
 - Added a first-visit welcome dialog and optional Ko-fi support link.
 - Added on-demand diagnostics for search, Chromium, audio resolution, and actual audio delivery.

@@ -268,6 +268,7 @@ a {
 
 .brand-mark {
   flex-shrink:0;
+  height:auto;
   filter:drop-shadow(0 3px 5px #000);
 }
 
@@ -433,7 +434,7 @@ a {
 }
 
 .readiness.ok:before {
-  content:"â–‚â–…â–‡ ";
+  content:"▂▅▇ ";
   font-size:10px;
 }
 
@@ -612,12 +613,12 @@ summary::-webkit-details-marker {
 }
 
 summary:before {
-  content:"â–¸";
+  content:"▸";
   color:var(--amber);
 }
 
 details[open] summary:before {
-  content:"â–ľ";
+  content:"▾";
 }
 
 .log-status {
@@ -758,7 +759,7 @@ pre {
   }
   .brand-mark {
     width:56px;
-    height:56px;
+    height:auto;
   }
   .hero-copy {
     padding-left:10px;

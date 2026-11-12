@@ -10,7 +10,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse, Response
 
 from .config import get_settings
 from .browser_tools import chromium_executable
@@ -111,18 +111,25 @@ async def logo() -> FileResponse:
     return FileResponse(LOGO_PATH, media_type="image/png")
 
 
+@app.get("/assets/logo.svg", response_class=FileResponse, include_in_schema=False)
+async def framed_logo() -> FileResponse:
+    return FileResponse(LOGO_PATH.with_suffix(".svg"), media_type="image/svg+xml")
+
+
 @app.get("/api/health")
 async def health() -> dict:
     return _health_payload()
 
 
 @app.get("/api/update", include_in_schema=False)
-async def update_status(refresh: bool = False) -> dict:
+async def update_status(response: Response, refresh: bool = False) -> dict:
+    response.headers["Cache-Control"] = "no-store"
     return await update_checker.check(force=refresh)
 
 
 @app.get("/api/ytdlp", include_in_schema=False)
-async def ytdlp_status(refresh: bool = False) -> dict:
+async def ytdlp_status(response: Response, refresh: bool = False) -> dict:
+    response.headers["Cache-Control"] = "no-store"
     return await ytdlp_updates.check(force=refresh)
 
 

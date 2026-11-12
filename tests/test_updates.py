@@ -52,7 +52,39 @@ def test_manual_check_endpoint_forces_refresh(monkeypatch):
 
     monkeypatch.setattr("backend.app.main.update_checker.check", check)
     with TestClient(app) as client:
-        assert client.get("/api/update?refresh=true").json() == {"forced": True}
+        response = client.get("/api/update?refresh=true")
+        assert response.json() == {"forced": True}
+        assert response.headers["cache-control"] == "no-store"
+
+
+async def test_manual_checks_bypass_upstream_cache_without_extra_polling(monkeypatch):
+    requests = []
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(200, json={"tag_name": f"v0.2.{len(requests)}"})
+    original_client = httpx.AsyncClient
+    monkeypatch.setattr("backend.app.update_checker.httpx.AsyncClient", lambda **kwargs:
+                        original_client(transport=httpx.MockTransport(handler), **kwargs))
+    checker = GitHubReleaseChecker("0.2.0", "rcsy-px/vdj-stream")
+    assert (await checker.check())["latestVersion"] == "0.2.1"
+    assert (await checker.check())["latestVersion"] == "0.2.1"
+    assert len(requests) == 1
+    assert (await checker.check(force=True))["latestVersion"] == "0.2.2"
+    assert len(requests) == 2
+    assert requests[0].url.params["_"] != requests[1].url.params["_"]
+    for request in requests:
+        assert "no-cache" in request.headers["cache-control"]
+        assert request.headers["pragma"] == "no-cache"
+
+
+def test_engine_version_response_is_not_cached(monkeypatch):
+    async def check(force=False):
+        return {"forced": force}
+    monkeypatch.setattr("backend.app.main.ytdlp_updates.check", check)
+    with TestClient(app) as client:
+        response = client.get("/api/ytdlp?refresh=true")
+        assert response.json() == {"forced": True}
+        assert response.headers["cache-control"] == "no-store"
 
 
 @pytest.mark.asyncio

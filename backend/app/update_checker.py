@@ -1,5 +1,6 @@
 import asyncio
 import re
+import secrets
 import time
 from typing import Any
 
@@ -76,10 +77,14 @@ class GitHubReleaseChecker:
         return "The release information could not be read. Please retry."
 
     async def _fetch(self) -> dict[str, Any]:
-        url = f"https://api.github.com/repos/{self.repository}/releases/latest"
+        # Each actual fetch has a unique URL, so intermediaries cannot reuse a
+        # pre-publication response. Automatic polling is still bounded by check().
+        url = f"https://api.github.com/repos/{self.repository}/releases/latest?_={secrets.token_hex(16)}"
         headers = {
             "Accept": "application/vnd.github+json",
             "User-Agent": f"VDJ-Companion/{self.current_version}",
+            "Cache-Control": "no-cache, no-store, max-age=0",
+            "Pragma": "no-cache",
         }
         async with httpx.AsyncClient(
             follow_redirects=True, timeout=self.timeout_seconds, headers=headers

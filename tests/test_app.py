@@ -32,33 +32,31 @@ def test_status_page() -> None:
     with TestClient(app) as client:
         response = client.get("/")
     assert response.status_code == 200
-    assert 'src="/assets/logo.svg"' in response.text
+    assert 'src="/assets/logo.png"' in response.text
     assert "Live logs" in response.text
     assert "Shutdown backend" in response.text
     assert "Current version" in response.text
     assert "Latest available" in response.text
-    assert "View update details on GitHub" in response.text
     assert "Skip this update" in response.text
     assert 'id="update-panel"' in response.text
-    assert 'updatePanel.classList.add("available")' in response.text
-    assert 'localStorage.setItem(skippedUpdateKey, version)' in response.text
-    assert 'getSkippedUpdate() === update.latestVersion' in response.text
-    assert 'latestVersion.addEventListener("click", restoreUpdate)' in response.text
-    assert "Online Source backend status" not in response.text
-    assert "https://github.com/rcsy-px" in response.text
-    assert "https://ko-fi.com/rycsypx" in response.text
+    assert 'id="update-ytdlp"' in response.text
+    assert 'content="' + shutdown_token + '"' in response.text
+    assert response.headers["cache-control"] == "no-store"
+    with TestClient(app) as client:
+        for asset in ("style.css", "app.js"):
+            assert client.get("/static/" + asset).status_code == 200
 
 
 def test_status_logo() -> None:
     with TestClient(app) as client:
-        response = client.get("/assets/logo.svg")
+        response = client.get("/assets/logo.png")
     assert response.status_code == 200
-    assert response.headers["content-type"].startswith("image/svg+xml")
-    assert "<svg" in response.text
+    assert response.headers["content-type"].startswith("image/png")
+    assert response.content.startswith(b"\x89PNG\r\n\x1a\n")
 
 
 def test_update_status_endpoint(monkeypatch) -> None:
-    async def fake_check():
+    async def fake_check(force=False):
         return {
             "currentVersion": "0.1.1",
             "latestVersion": "0.1.2",

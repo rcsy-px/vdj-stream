@@ -12,6 +12,12 @@ jobs:
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run python -m pytest -q
       - name: Verify tag matches project version
         shell: pwsh
         run: |
@@ -28,8 +34,12 @@ jobs:
         run: |
           $version = "${{ github.ref_name }}".TrimStart("v")
           ./scripts/build-release.ps1 -Version $version
+      - name: Verify packaged application
+        run: uv run python scripts/verify-release.py
       - name: Create GitHub release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" dist/*.zip dist/*.sha256 --generate-notes
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          gh release create "${{ github.ref_name }}" dist/*.zip dist/*.sha256 --verify-tag --title "VDJ Companion $version" --notes-file "docs/releases/$version.md"

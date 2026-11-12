@@ -17,4 +17,5 @@ __pycache__/
 *.sqlite
 *.sqlite3
 .env
+mockups/
 plugin/online-source/build/

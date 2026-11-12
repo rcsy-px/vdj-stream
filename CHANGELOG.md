@@ -1,6 +1,25 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-11-12
+
+- Rebuilt the local control panel with a responsive retro metal skin and an original headphone robot logo.
+- Added a first-visit welcome dialog and optional Ko-fi support link.
+- Added on-demand diagnostics for search, Chromium, audio resolution, and actual audio delivery.
+- Serialized engine updates against bounded concurrent searches and resolutions; ignored external yt-dlp configuration.
+- Aligned plugin/backend timeouts, distinguished search failure from empty results, and improved track-load errors.
+- Closed upstream connections and child processes on errors, cancellation, and disconnects; preserved HTTP 416 and audio extensions.
+- Bounded the resolver cache and removed unused per-track locks.
+- Validated and retried portable-tool downloads before replacing files; installed the exact Playwright Chromium revision.
+- Enforced a total download deadline even when a server stalls mid-transfer.
+- Preferred the FFmpeg build author's GitHub mirror for first-install downloads.
+- Kept portable Python installation from adding user-level executables or registry entries.
+- Required backend tests, native builds, source fingerprint checks, and archive smoke checks before release publication.
+- Reworked the README and included contributor instructions in release archives.
+- Added installed/latest yt-dlp versions, periodic checks, and a protected manual stable update button.
+- Reduced failed release-check caching to one minute and added immediate retry with useful errors.
+- Replaced startup's automatic yt-dlp updates with explicit control-panel updates.
+- Fixed misleading backend startup failures when the browser cannot be opened.
+- Excluded local design mockups from Git.
 
 ## 0.1.2 - 2026-06-13
 

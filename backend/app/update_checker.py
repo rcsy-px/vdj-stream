@@ -32,17 +32,21 @@ class GitHubReleaseChecker:
         self._cached_result: dict[str, Any] | None = None
         self._lock = asyncio.Lock()
 
-    async def check(self) -> dict[str, Any]:
+    async def check(self, force: bool = False) -> dict[str, Any]:
         async with self._lock:
             now = time.monotonic()
             if (
                 self._cached_result is not None
-                and now - self._cached_at < self.cache_ttl_seconds
+                and not force
+                and now - self._cached_at < (
+                    min(60, self.cache_ttl_seconds)
+                    if self._cached_result.get("error") else self.cache_ttl_seconds
+                )
             ):
                 return self._cached_result
             try:
                 result = await self._fetch()
-            except Exception:
+            except Exception as exc:
                 result = {
                     "currentVersion": self.current_version,
                     "latestVersion": None,
@@ -50,10 +54,26 @@ class GitHubReleaseChecker:
                     "releaseUrl": None,
                     "downloadUrl": None,
                     "error": "Update check unavailable",
+                    "errorDetail": self._error_detail(exc),
                 }
             self._cached_result = result
             self._cached_at = now
             return result
+
+    @staticmethod
+    def _error_detail(exc: Exception) -> str:
+        if isinstance(exc, httpx.HTTPStatusError):
+            status = exc.response.status_code
+            if status in (403, 429):
+                return "GitHub refused the request or its rate limit was reached. Try again later."
+            if status == 404:
+                return "No public release was found for this repository."
+            return f"GitHub returned HTTP {status}. Try again later."
+        if isinstance(exc, httpx.TimeoutException):
+            return "GitHub took too long to respond. Check your connection and retry."
+        if isinstance(exc, httpx.ConnectError):
+            return "Cannot connect to GitHub. Check your internet connection and network permissions."
+        return "The release information could not be read. Please retry."
 
     async def _fetch(self) -> dict[str, Any]:
         url = f"https://api.github.com/repos/{self.repository}/releases/latest"
@@ -71,6 +91,8 @@ class GitHubReleaseChecker:
         latest_version = str(release.get("tag_name", "")).removeprefix("v")
         current_tuple = _version_tuple(self.current_version)
         latest_tuple = _version_tuple(latest_version)
+        if latest_tuple is None:
+            raise ValueError("Invalid release version")
         assets = release.get("assets") or []
         release_prefix = f"https://github.com/{self.repository}/releases/"
         release_url = release.get("html_url")

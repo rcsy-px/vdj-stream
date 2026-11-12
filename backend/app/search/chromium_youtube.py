@@ -1,9 +1,12 @@
 import logging
+import asyncio
+from pathlib import Path
 from urllib.parse import quote_plus
 
 from playwright.async_api import Browser, Playwright, async_playwright
 
 from ..models import TrackSearchResult
+from ..browser_tools import chromium_executable
 from .base import SearchProvider, duration_to_seconds, youtube_thumbnail_url
 
 logger = logging.getLogger(__name__)
@@ -61,23 +64,46 @@ EXTRACT_RESULTS_JS = r"""
 class ChromiumYouTubeSearchProvider(SearchProvider):
     name = "youtube_browser"
 
-    def __init__(self, headless: bool = True, timeout_seconds: float = 20):
+    def __init__(self, headless: bool = True, timeout_seconds: float = 20, browser_root: Path | None = None):
         self.headless = headless
         self.timeout_ms = int(timeout_seconds * 1000)
         self._playwright: Playwright | None = None
         self._browser: Browser | None = None
+        self.browser_root = browser_root
+        self._startup_lock = asyncio.Lock()
+        self._search_slots = asyncio.Semaphore(2)
 
     async def _ensure_browser(self) -> Browser:
+        async with self._startup_lock:
+            return await self._start_browser()
+
+    async def _start_browser(self) -> Browser:
         if self._browser and self._browser.is_connected():
             return self._browser
+        executable = chromium_executable(self.browser_root) if self.browser_root else None
+        if self.browser_root and executable is None:
+            raise RuntimeError("The required Chromium version is missing. Run START.bat to repair it.")
+        if self._playwright:
+            await self._playwright.stop()
         self._playwright = await async_playwright().start()
-        self._browser = await self._playwright.chromium.launch(
-            headless=self.headless,
-            args=["--autoplay-policy=user-gesture-required", "--mute-audio"],
-        )
+        try:
+            self._browser = await self._playwright.chromium.launch(
+                headless=self.headless,
+                executable_path=str(executable) if executable else None,
+                args=["--autoplay-policy=user-gesture-required", "--mute-audio"],
+            )
+        except BaseException:
+            await self._playwright.stop()
+            self._playwright = None
+            raise
         return self._browser
 
     async def search(self, query: str, limit: int) -> list[TrackSearchResult]:
+        async with asyncio.timeout(self.timeout_ms / 1000):
+            async with self._search_slots:
+                return await self._search(query, limit)
+
+    async def _search(self, query: str, limit: int) -> list[TrackSearchResult]:
         browser = await self._ensure_browser()
         page = await browser.new_page()
         try:

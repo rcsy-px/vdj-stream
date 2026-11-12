@@ -2,6 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -16,8 +17,10 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8765
     public_base_url: str = "http://127.0.0.1:8765"
-    search_timeout_seconds: float = 20.0
-    resolve_timeout_seconds: float = 45.0
+    # Plugin waits 65s. Whole API operations finish within this smaller deadline.
+    request_timeout_seconds: float = Field(default=55, gt=0, le=55)
+    search_timeout_seconds: float = Field(default=20, gt=0, le=20)
+    resolve_timeout_seconds: float = Field(default=45, gt=0, le=45)
     stream_connect_timeout_seconds: float = 10.0
     stream_read_timeout_seconds: float = 30.0
     query_cache_ttl_seconds: int = 1800

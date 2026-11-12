@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="control-token" content="__CONTROL_TOKEN__">
+  <title>VDJ Companion</title>
+  <link rel="icon" href="/assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="/static/style.css">
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+<main class="rack">
+  <header class="titlebar"><img src="/assets/logo.png" alt="" width="25" height="25"><h1>VDJ Companion</h1><span class="title-groove"></span><span class="edition">LOCAL / ONLINE SOURCE</span></header>
+  <section class="module hero" aria-label="Companion status">
+    <div class="hero-screen inset">
+      <img class="brand-mark" src="/assets/logo.png" alt="VDJ Companion headphone robot" width="94" height="94">
+      <div class="hero-copy"><div class="display-title">VDJ COMPANION</div><p>YouTube search inside VirtualDJ</p></div>
+      <div class="spectrum" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="hero-strip"><span><span id="connection-led" class="led"></span><span id="connection">Connecting to backend…</span></span><span class="strip-note">YOUR MUSIC. YOUR DECKS.</span><span class="lcd small" id="hero-version">—</span></div>
+  </section>
+
+  <section class="module components" aria-label="Components">
+    <div class="component-list inset">
+      <div class="component"><span class="component-icon">▤</span><span>Backend</span><span class="component-note">Local service</span><strong id="backend-ready" class="readiness">Checking</strong></div>
+      <div class="component"><span class="component-icon">↧</span><span>yt-dlp</span><span class="component-note" id="tool-version">Reading version…</span><strong id="ytdlp-ready" class="readiness">Checking</strong></div>
+      <div class="component"><span class="component-icon">▥</span><span>FFmpeg</span><span class="component-note">Audio toolkit</span><strong id="ffmpeg-ready" class="readiness">Checking</strong></div>
+      <div class="component"><span class="component-icon">◎</span><span>Chromium</span><span class="component-note">Search fallback</span><strong id="chromium-ready" class="readiness">Checking</strong></div>
+    </div>
+  </section>
+
+  <section class="module updates" aria-labelledby="updates-title">
+    <div class="section-heading"><h2 id="updates-title">UPDATES</h2><span class="groove"></span><button id="check-updates" class="compact" type="button">↻ Check again</button></div>
+    <article id="update-panel" class="update-card">
+      <div class="card-heading"><h3>VDJ Companion <span>APPLICATION</span></h3><span id="app-badge" class="badge">CHECKING</span></div>
+      <div class="version-grid"><div><label>Current version</label><div class="lcd" id="current-version">—</div></div><div><label>Latest available</label><div class="lcd" id="latest-version">—</div></div></div>
+      <p id="update-status" class="status-message" role="status">Checking GitHub releases…</p>
+      <div id="app-actions" class="update-actions" hidden><a id="view-update" class="button gold" target="_blank" rel="noopener noreferrer">View update details on GitHub ↗</a><button id="skip-update" type="button">Skip this update</button></div>
+      <button id="restore-update" class="text-button" type="button" hidden>Show skipped update</button>
+    </article>
+    <article id="ytdlp-panel" class="update-card">
+      <div class="card-heading"><h3>yt-dlp <span>YOUTUBE ENGINE</span></h3><span id="ytdlp-badge" class="badge">CHECKING</span></div>
+      <div class="version-grid"><div><label>Installed version</label><div class="lcd" id="ytdlp-current">—</div></div><div><label>Latest stable</label><div class="lcd" id="ytdlp-latest">—</div></div></div>
+      <div class="engine-bottom"><p id="ytdlp-status" class="status-message" role="status">Checking the installed engine and latest release…</p><button id="update-ytdlp" class="gold" type="button" hidden>↧ Update yt-dlp</button></div>
+      <p class="hint">YouTube changes often. An updated engine can fix search and download errors.</p>
+    </article>
+  </section>
+
+  <section class="module diagnostics-module" aria-labelledby="diagnostics-title">
+    <div class="section-heading"><h2 id="diagnostics-title">DIAGNOSTICS</h2><span class="groove"></span><button id="run-diagnostics" class="compact" type="button">Run checks</button></div>
+    <p class="hint">Test YouTube search, Chromium fallback and a small audio sample. This can take up to three minutes.</p>
+    <div id="diagnostic-results" role="status" aria-live="polite"></div>
+  </section>
+  <section class="module logs-module">
+    <details open><summary><span class="section-label">LIVE LOGS</span><span id="log-status" class="log-status">CONNECTING</span></summary><pre id="logs" class="inset" aria-label="Live logs">Waiting for backend events…</pre></details>
+    <div class="power-row"><span id="message" role="status"></span><button id="shutdown" class="danger" type="button">⏻ Shutdown backend</button></div>
+  </section>
+  <footer class="module footer"><div class="footer-status"><span class="mini-bars" aria-hidden="true">▂▅▃▇▅▂</span><span>v<span id="footer-version">—</span></span><span>Uptime <span id="uptime">—</span></span><a href="/api/health" target="_blank" rel="noopener">JSON health</a></div><nav><a class="button" href="https://github.com/rcsy-px" target="_blank" rel="noopener noreferrer">⌘ GitHub</a><a class="button" href="https://ko-fi.com/rycsypx" target="_blank" rel="noopener noreferrer">♥ Ko-fi Support</a></nav></footer>
+</main>
+<dialog id="welcome" class="welcome-dialog" aria-labelledby="welcome-title" aria-describedby="welcome-description">
+  <div class="welcome-titlebar"><span>A NOTE FROM THE CREATOR</span><button id="welcome-close" class="compact" type="button" aria-label="Close welcome">×</button></div>
+  <div class="welcome-body">
+    <img src="/assets/logo.png" alt="" width="112" height="112">
+    <p class="welcome-eyebrow">WELCOME TO VDJ COMPANION</p>
+    <h2 id="welcome-title">Thanks for using my plugin.</h2>
+    <div id="welcome-description">
+      <p>I built VDJ Companion to make finding music inside VirtualDJ a little easier. I hope it becomes a useful part of your setup.</p>
+      <p>If you enjoy using it and you're able to, a coffee helps me keep improving the project. Your support is always optional — I'm glad you're here either way.</p>
+    </div>
+    <p class="welcome-signature">— rycsypx</p>
+    <button id="welcome-continue" type="button" autofocus>Let's get started</button>
+  </div>
+  <div class="welcome-support"><span>Help keep the music going.</span><a id="welcome-kofi" class="button gold" href="https://ko-fi.com/rycsypx" target="_blank" rel="noopener noreferrer">♥ Support on Ko-fi ↗</a></div>
+</dialog>
+</body>
+</html>

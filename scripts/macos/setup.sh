@@ -1,6 +1,31 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+# Log before Python or any downloaded tools are available. A pipeline wrapper
+# waits for tee and preserves the installer's status (including early failures).
+if [ "${1:-}" != --logged-setup ]; then
+  mkdir -p data/logs
+  setup_log="$PWD/data/logs/setup-$(date -u +%Y%m%d-%H%M%S)-$$.log"
+  (umask 077; set -o noclobber; : > "$setup_log")
+  echo "Setup log: $setup_log"
+  set +e
+  bash "$PWD/scripts/macos/setup.sh" --logged-setup "$@" 2>&1 | tee "$setup_log"
+  results=("${PIPESTATUS[@]}")
+  result=${results[0]}
+  if [ "${results[1]}" -ne 0 ]; then
+    echo "Could not save the complete setup log: $setup_log" >&2
+    [ "$result" -ne 0 ] || result=1
+  fi
+  if [ "$result" -eq 0 ]; then
+    echo "Setup succeeded. Log: $setup_log" | tee -a "$setup_log"
+  else
+    echo "Setup failed (exit $result). For help, share this log after reviewing it: $setup_log" | tee -a "$setup_log"
+  fi
+  exit "$result"
+fi
+shift
+echo "VDJ Companion setup — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "Mac version: $(cat MACOS_VERSION)"
 if [ "$(uname -s)" != Darwin ]; then echo "This launcher requires macOS." >&2; exit 1; fi
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 export UV_CACHE_DIR="$PWD/.cache/uv"

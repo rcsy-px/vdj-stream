@@ -5,8 +5,8 @@ alongside VirtualDJ and provides a browser control panel for status and updates.
 
 **Public beta · Intel and Apple Silicon · macOS 14 or later**
 
-[Download beta 3](https://github.com/rcsy-px/vdj-stream/releases/download/macos-v0.2.0-beta.3/vdj-companion-0.2.0-beta.3-macos-universal.zip)
-· [Release notes](https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.2.0-beta.3)
+[Download beta 4](https://github.com/rcsy-px/vdj-stream/releases/download/macos-v0.2.0-beta.4/vdj-companion-0.2.0-beta.4-macos-universal.zip)
+· [Release notes](https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.2.0-beta.4)
 · [Report a problem](https://github.com/rcsy-px/vdj-stream/issues)
 
 No GitHub account is needed to download. Installation and update flows have
@@ -25,7 +25,7 @@ installation. The launcher downloads the required tools into its own folder.
 ## Download and start Companion
 
 1. Download the **macOS ZIP** linked above. Under release **Assets**, choose
-   `vdj-companion-0.2.0-beta.3-macos-universal.zip`, not a source-code archive.
+   `vdj-companion-0.2.0-beta.4-macos-universal.zip`, not a source-code archive.
    The same ZIP works on Intel and Apple Silicon.
 2. Double-click the ZIP to extract it. Move the extracted folder somewhere
    permanent and writable, such as inside your home folder, **before** running it.
@@ -108,7 +108,7 @@ reload the track in VirtualDJ. This is separate from updating Companion itself.
 | --- | --- |
 | FFmpeg download fails | Check your connection and reopen `START.command`. You can also set `FFMPEG_BIN_DIR` below to use existing tools. |
 | FFmpeg checksum or signature error | Retry setup. If it persists, report the error; do not bypass verification. |
-| Setup fails | Read the last error in the launcher Terminal. Resolve it, then reopen `START.command`. |
+| Setup fails | Check the last error in Terminal or the newest `data/logs/setup-*.log`. Resolve it, then reopen `START.command`. |
 | VirtualDJ folder not found | Open VirtualDJ once and quit it. For a custom location, use `VDJ_HOME` below. |
 | Source missing | Let setup finish, restart VirtualDJ and check your Pro license. Resolve any plugin-folder error shown during setup. |
 | No search results | Click **Run checks** in the control panel and inspect **Live logs**. |
@@ -163,6 +163,25 @@ licenses; see the build provider for its source/build information. The downloade
 executables are not included in Companion's ZIP.
 
 ## Send feedback
+
+### Where to find your logs
+
+Open your extracted Companion folder in Finder, then open **data → logs**.
+Each setup attempt saves a separate **`setup-<date>-<time>-<id>.log`** file,
+including tool downloads and errors that happen before Python or the web panel
+can start. The same output remains visible in Terminal. The filename uses UTC;
+the newest file by modification time is your latest attempt. Retrying setup does
+not overwrite the previous log.
+
+For an installation problem, attach that setup log. For a search or deck problem,
+use **Live logs** in the web panel or **`data/logs/companion.log`**. App updates
+also have **`.cache/app-update-*/update.log`**; use **Command+Shift+.** in Finder
+to show the hidden `.cache` folder.
+
+Logs stay on your Mac and are never sent automatically. Setup logs contain raw
+tool output and may include your username, local paths or download URLs. Review
+and remove private information before sharing. You can delete old setup logs
+once you no longer need them; do not remove an active update's backup folder.
 
 [Open an issue](https://github.com/rcsy-px/vdj-stream/issues) or reply in the
 discussion where you found the beta. Include:

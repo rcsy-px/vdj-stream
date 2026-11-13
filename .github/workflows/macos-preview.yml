@@ -44,8 +44,6 @@ jobs:
       - run: bash scripts/macos/build-plugin.sh
       - run: uv run python scripts/macos/native_smoke.py
       - run: uv run python scripts/macos/package.py
-      - name: Prepare FFmpeg
-        run: command -v ffmpeg || brew install ffmpeg
       - name: Test extracted package
         run: uv run python scripts/macos/package_smoke.py
       - uses: actions/upload-artifact@v4

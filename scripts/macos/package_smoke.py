@@ -22,6 +22,15 @@ with tempfile.TemporaryDirectory(prefix="Companion clean install ") as temporary
     (home / "Plugins64").mkdir()
     env = {**os.environ, "VDJ_HOME": str(home), "VDJ_NO_BROWSER": "1"}
     subprocess.run(["bash", "scripts/macos/setup.sh"], cwd=app, env=env, check=True, timeout=1200)
+    # Fresh setup must install actual private tools, even if Homebrew exists on CI.
+    for name in ('ffmpeg', 'ffprobe'):
+        binary = app / 'tools/ffmpeg/bin' / name
+        assert binary.is_file() and not binary.is_symlink(), binary
+        subprocess.run([str(binary), '-version'], check=True, capture_output=True)
+    sample = destination / 'test audio.mp3'
+    subprocess.run([str(app / 'tools/ffmpeg/bin/ffmpeg'), '-v', 'error',
+        '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.2', '-c:a', 'libmp3lame', str(sample)], check=True)
+    subprocess.run([str(app / 'tools/ffmpeg/bin/ffprobe'), '-v', 'error', str(sample)], check=True)
     for folder in ("PluginsMacArm", "Plugins64"):
         assert (home / folder / "OnlineSources/VDJ Companion Source.bundle/Contents/MacOS/VDJCompanionSource").is_file()
     python = str(app / ".venv/bin/python")

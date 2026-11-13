@@ -5,8 +5,8 @@ alongside VirtualDJ and provides a browser control panel for status and updates.
 
 **Public beta · Intel and Apple Silicon · macOS 14 or later**
 
-[Download beta 2](https://github.com/rcsy-px/vdj-stream/releases/download/macos-v0.2.0-beta.2/vdj-companion-0.2.0-beta.2-macos-universal.zip)
-· [Release notes](https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.2.0-beta.2)
+[Download beta 3](https://github.com/rcsy-px/vdj-stream/releases/download/macos-v0.2.0-beta.3/vdj-companion-0.2.0-beta.3-macos-universal.zip)
+· [Release notes](https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.2.0-beta.3)
 · [Report a problem](https://github.com/rcsy-px/vdj-stream/issues)
 
 No GitHub account is needed to download. Installation and update flows have
@@ -18,39 +18,14 @@ feedback from people using real VirtualDJ installations.
 - A Mac running macOS 14 or later, with an internet connection.
 - VirtualDJ installed and opened at least once, with an active Pro license as
   required by the Windows version.
-- **FFmpeg and ffprobe**, installed using the instructions below.
 
-You do not need to install Python, yt-dlp or Chromium yourself. The launcher
-downloads private copies into the Companion folder on first launch.
+You do not need Homebrew or a separate Python, FFmpeg, yt-dlp or Chromium
+installation. The launcher downloads the required tools into its own folder.
 
-## 1. Install FFmpeg
-
-If you use [Homebrew](https://brew.sh), open **Terminal** (Applications → Utilities)
-and run:
-
-```bash
-brew install ffmpeg
-```
-
-If Homebrew is not installed, follow its [official instructions](https://brew.sh),
-including any “Next steps”, then run the command above. Homebrew currently supports
-macOS 15 and newer; on macOS 14, use an existing compatible FFmpeg installation
-with the [custom folder option](#custom-folders) below.
-
-Check that both tools print version information:
-
-```bash
-ffmpeg -version
-ffprobe -version
-```
-
-If either says `command not found`, finish the Homebrew setup or configure your
-existing FFmpeg folder before continuing.
-
-## 2. Download and start Companion
+## Download and start Companion
 
 1. Download the **macOS ZIP** linked above. Under release **Assets**, choose
-   `vdj-companion-0.2.0-beta.2-macos-universal.zip`, not a source-code archive.
+   `vdj-companion-0.2.0-beta.3-macos-universal.zip`, not a source-code archive.
    The same ZIP works on Intel and Apple Silicon.
 2. Double-click the ZIP to extract it. Move the extracted folder somewhere
    permanent and writable, such as inside your home folder, **before** running it.
@@ -114,7 +89,7 @@ folder so it can attempt recovery; do not delete the backup first.
 <summary>Already installed the earlier beta 1?</summary>
 
 That build did not include the app updater and is no longer offered for download.
-Stop the old Companion, quit VirtualDJ, extract beta 2 into a new permanent folder
+Stop the old Companion, quit VirtualDJ, extract the current beta into a new permanent folder
 and run its **START.command** once. Use the new folder from then on; later updates
 can be installed from the panel. Keep the old folder if you need its data: this
 fresh installation does not migrate it automatically.
@@ -131,8 +106,8 @@ reload the track in VirtualDJ. This is separate from updating Companion itself.
 
 | What you see | What to try |
 | --- | --- |
-| `brew: command not found` | Complete Homebrew's installation and “Next steps”, then open a new Terminal. |
-| FFmpeg or ffprobe missing | Complete step 1 or set `FFMPEG_BIN_DIR` below. Both tools are required. |
+| FFmpeg download fails | Check your connection and reopen `START.command`. You can also set `FFMPEG_BIN_DIR` below to use existing tools. |
+| FFmpeg checksum or signature error | Retry setup. If it persists, report the error; do not bypass verification. |
 | Setup fails | Read the last error in the launcher Terminal. Resolve it, then reopen `START.command`. |
 | VirtualDJ folder not found | Open VirtualDJ once and quit it. For a custom location, use `VDJ_HOME` below. |
 | Source missing | Let setup finish, restart VirtualDJ and check your Pro license. Resolve any plugin-folder error shown during setup. |
@@ -173,6 +148,19 @@ FFMPEG_BIN_DIR="/path/to/ffmpeg/bin" ./START.command
 Overrides apply to that launch and its in-app updates. Use the same command on
 later launches if your setup requires it. Multiple overrides can be placed before
 `./START.command` on the same line.
+
+### Automatic FFmpeg installation
+
+New installations download processor-specific FFmpeg and ffprobe release builds
+directly from [Martin Riedl's build server](https://ffmpeg.martin-riedl.de/).
+Companion pins the download version and SHA-256 checksums, verifies the code
+signature and architecture, and runs both tools before installing them into
+`tools/ffmpeg/bin`. It does not install Homebrew or change system tools.
+
+Working tools from an earlier installation are reused. `FFMPEG_BIN_DIR` is still
+available for an existing installation of your choice. FFmpeg has its own
+licenses; see the build provider for its source/build information. The downloaded
+executables are not included in Companion's ZIP.
 
 ## Send feedback
 

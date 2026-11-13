@@ -47,9 +47,14 @@ def apply(root, job, request, recover=False):
     if recover:
         if journal.exists():
             state = json.loads(journal.read_text())
+            if state['phase'] == 'complete':
+                return {'ok': True, 'message': 'Companion was updated successfully.'}
             if state['phase'] == 'installing':
                 rollback(state['plan'], backup)
                 write_json(journal, {**state, 'phase': 'rolled-back'})
+        setup_lock = root / '.cache/macos-setup.lock'
+        if setup_lock.is_dir():
+            setup_lock.rmdir()
         return {'ok': False, 'message': 'An interrupted update was recovered. Retry the update.'}
     result = subprocess.run(['pgrep', '-ix', 'VirtualDJ'], capture_output=True)
     if result.returncode != 1:
@@ -76,9 +81,10 @@ def apply(root, job, request, recover=False):
             if (staged / name).exists():
                 copy(staged / name, root / name)
         env = {**os.environ, 'VDJ_NO_BROWSER': '1'}
+        inherited = (int(env['VDJ_UPDATE_LOCK_FD']),) if env.get('VDJ_UPDATE_LOCK_FD') else ()
         # Python tools and user data stay in place. Restore .venv if sync fails.
         subprocess.run(['bash', 'scripts/macos/setup.sh', '--skip-plugin-install'],
-                       cwd=root, env=env, check=True, timeout=1200)
+                       cwd=root, env=env, check=True, timeout=1200, pass_fds=inherited)
         python = str(root / '.venv/bin/python')
         subprocess.run([python, 'scripts/macos/install_plugin.py'], cwd=root, env=env, check=True, timeout=60)
         subprocess.run([python, '-c',

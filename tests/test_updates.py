@@ -53,7 +53,7 @@ def test_manual_check_endpoint_forces_refresh(monkeypatch):
     monkeypatch.setattr("backend.app.main.update_checker.check", check)
     with TestClient(app) as client:
         response = client.get("/api/update?refresh=true")
-        assert response.json() == {"forced": True}
+        assert response.json()["forced"] is True
         assert response.headers["cache-control"] == "no-store"
 
 

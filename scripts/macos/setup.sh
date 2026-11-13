@@ -54,7 +54,10 @@ for name in ffmpeg ffprobe; do
     echo "Alternatively set FFMPEG_BIN_DIR to a folder containing ffmpeg and ffprobe." >&2
     exit 1
   fi
-  ln -sfn "$candidate" "tools/ffmpeg/bin/$name"
+  candidate=$(.venv/bin/python -c 'import pathlib,sys; print(pathlib.Path(sys.argv[1]).resolve(strict=True))' "$candidate")
+  if [ "$candidate" != "$PWD/tools/ffmpeg/bin/$name" ]; then
+    ln -sfn "$candidate" "tools/ffmpeg/bin/$name"
+  fi
 done
 .venv/bin/python -m playwright install chromium
 if [ "${1:-}" != --skip-plugin-install ]; then

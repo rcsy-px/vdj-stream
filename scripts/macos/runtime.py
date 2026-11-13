@@ -33,7 +33,7 @@ def healthy():
         return False
 
 
-def apply_pending(recover=False):
+def apply_pending(lock_fd, recover=False):
     active = ROOT / 'data/macos-update-active.json'
     pending = ROOT / 'data/macos-update-pending.json'
     if not recover:
@@ -50,7 +50,8 @@ def apply_pending(recover=False):
     if recover:
         command.append('--recover')
     with (job / 'update.log').open('a') as log:
-        subprocess.run(command, stdout=log, stderr=log, check=True)
+        subprocess.run(command, stdout=log, stderr=log, check=True,
+                       pass_fds=(lock_fd,), env={**os.environ, 'VDJ_UPDATE_LOCK_FD': str(lock_fd)})
     return True
 
 
@@ -83,8 +84,8 @@ def main():
             if os.environ.get("VDJ_NO_BROWSER") != "1":
                 subprocess.run(["open", BASE], check=True)
             return
-        apply_pending(recover=True)
-        if apply_pending():
+        recovered = apply_pending(lock.fileno(), recover=True)
+        if recovered or apply_pending(lock.fileno()):
             os.execv(str(ROOT / '.venv/bin/python'), [str(ROOT / '.venv/bin/python'), str(ROOT / 'scripts/macos/runtime.py'), 'start'])
         # Refuse to share a port with another copy or another application.
         with socket.socket() as probe:
@@ -107,7 +108,7 @@ def main():
         app.state.request_shutdown = lambda: setattr(server, 'should_exit', True)
         print("Leave this Terminal window open. Use STOP.command or Ctrl+C to stop.")
         server.run()
-        if apply_pending():
+        if apply_pending(lock.fileno()):
             os.environ['VDJ_NO_BROWSER'] = '1'
             os.execv(str(ROOT / '.venv/bin/python'), [str(ROOT / '.venv/bin/python'), str(ROOT / 'scripts/macos/runtime.py'), 'start'])
 

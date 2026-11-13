@@ -16,6 +16,7 @@ BASE = "http://127.0.0.1:8765"
 sys.path.insert(0, str(ROOT))
 os.chdir(ROOT)
 os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(ROOT / "tools/playwright-browsers")
+os.environ["PATH"] = str(ROOT / "tools/ffmpeg/bin") + os.pathsep + os.environ.get("PATH", "")
 OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
@@ -40,6 +41,8 @@ def main():
             running = False
         except BlockingIOError:
             running = True
+        if sys.argv[1:] == ["status"]:
+            raise SystemExit(0 if running else 1)
         if sys.argv[1:] == ["stop"]:
             if not running:
                 print("This copy of Companion is not running.")
@@ -56,7 +59,8 @@ def main():
         if running:
             if not healthy():
                 raise SystemExit("Companion is already starting; wait a moment.")
-            subprocess.run(["open", BASE], check=True)
+            if os.environ.get("VDJ_NO_BROWSER") != "1":
+                subprocess.run(["open", BASE], check=True)
             return
         # Refuse to share a port with another copy or another application.
         with socket.socket() as probe:

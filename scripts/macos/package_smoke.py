@@ -58,6 +58,8 @@ asyncio.run(check())
                     time.sleep(.5)
             else:
                 raise TimeoutError("Backend startup timed out")
+            subprocess.run([str(app / "START.command")], cwd=app, env=env, check=True, timeout=15)
+            assert process.poll() is None, "Opening the launcher again must reuse the existing backend"
             subprocess.run([str(app / "STOP.command")], cwd=app, env=env, check=True, timeout=10)
             assert process.wait(timeout=15) in (0, -15)
         finally:

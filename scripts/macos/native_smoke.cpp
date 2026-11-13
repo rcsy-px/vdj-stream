@@ -31,8 +31,14 @@ int main(int argc, char** argv) {
     using Factory = HRESULT (*)(const GUID&, const GUID&, void**);
     auto factory = reinterpret_cast<Factory>(dlsym(library, "DllGetClassObject"));
     assert(factory);
+    GUID hostClass;
+    std::memset(&hostClass, 0xA5, sizeof(hostClass));
+    hostClass.Data1 = CLSID_VdjPlugin8.Data1;
+    hostClass.Data2 = CLSID_VdjPlugin8.Data2;
+    hostClass.Data3 = CLSID_VdjPlugin8.Data3;
+    std::memcpy(hostClass.Data4, CLSID_VdjPlugin8.Data4, 8);
     void* object = nullptr;
-    assert(factory(CLSID_VdjPlugin8, IID_IVdjPluginOnlineSource, &object) == S_OK);
+    assert(factory(hostClass, IID_IVdjPluginOnlineSource, &object) == S_OK);
     auto* plugin = static_cast<IVdjPluginOnlineSource*>(object);
     assert(plugin->OnLoad() == S_OK);
     TVdjPluginInfo8 info{};

@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: macos-preview-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   windows-regression:
     runs-on: windows-2025

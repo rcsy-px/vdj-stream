@@ -16,7 +16,9 @@ entries = {}
 for name in ("START.command", "STOP.command", "VERSION", "LICENSE", "pyproject.toml", "uv.lock"):
     entries[name] = ROOT / name
 entries["README.md"] = ROOT / "docs/MACOS.md"
-for name in ("backend", "docs/assets", "scripts/macos"):
+for name in ("setup.sh", "runtime.py", "install_plugin.py"):
+    entries[f"scripts/macos/{name}"] = ROOT / "scripts/macos" / name
+for name in ("backend", "docs/assets"):
     for path in (ROOT / name).rglob("*"):
         if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
             entries[path.relative_to(ROOT).as_posix()] = path

@@ -82,7 +82,7 @@ class ChromiumYouTubeSearchProvider(SearchProvider):
             return self._browser
         executable = chromium_executable(self.browser_root) if self.browser_root else None
         if self.browser_root and executable is None:
-            raise RuntimeError("The required Chromium version is missing. Run START.bat to repair it.")
+            raise RuntimeError("The required Chromium version is missing. Run the platform launcher (START.bat or START.command) to repair it.")
         if self._playwright:
             await self._playwright.stop()
         self._playwright = await async_playwright().start()

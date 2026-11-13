@@ -189,6 +189,7 @@ def test_chromium_rejects_stale_revision(tmp_path, monkeypatch):
     manifest.parent.mkdir(parents=True)
     manifest.write_text(json.dumps({'browsers': [{'name': 'chromium', 'revision': '123'}]}))
     monkeypatch.setattr('backend.app.browser_tools.files', lambda _: tmp_path)
+    monkeypatch.setattr('backend.app.browser_tools.sys', SimpleNamespace(platform='win32'))
     old = tmp_path / 'chromium-122/chrome-win64/chrome.exe'
     old.parent.mkdir(parents=True)
     old.touch()

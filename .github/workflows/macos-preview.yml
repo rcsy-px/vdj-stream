@@ -1,0 +1,53 @@
+name: macOS preview
+
+on:
+  push:
+    branches: [feature/macos]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-regression:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked
+      - run: uv run python -m pytest -q
+      - shell: pwsh
+        run: |
+          ./plugin/online-source/build-and-install.ps1 -BuildOnly
+          ./scripts/build-release.ps1
+          uv run python scripts/verify-release.py
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked
+      - run: uv run python -m pytest -q
+      - run: bash scripts/macos/build-plugin.sh
+      - run: uv run python scripts/macos/native_smoke.py
+      - run: uv run python scripts/macos/package.py
+      - name: Prepare FFmpeg
+        run: command -v ffmpeg || brew install ffmpeg
+      - name: Test extracted package
+        run: uv run python scripts/macos/package_smoke.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-preview-tested-on-${{ matrix.runner }}
+          path: |
+            dist/*-macos-universal.zip
+            dist/*-macos-universal.zip.sha256
+          if-no-files-found: error

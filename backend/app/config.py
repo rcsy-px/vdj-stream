@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+import sys
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
@@ -7,6 +8,7 @@ from pydantic import Field
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PROJECT_VERSION = (PROJECT_ROOT / "VERSION").read_text(encoding="ascii").strip()
+EXECUTABLE_SUFFIX = ".exe" if sys.platform == "win32" else ""
 
 
 class Settings(BaseSettings):
@@ -33,7 +35,7 @@ class Settings(BaseSettings):
     data_dir: Path = PROJECT_ROOT / "data"
     log_dir: Path = PROJECT_ROOT / "data" / "logs"
     database_path: Path = PROJECT_ROOT / "data" / "companion.sqlite3"
-    ytdlp_exe: Path = PROJECT_ROOT / "tools" / "yt-dlp" / "yt-dlp.exe"
+    ytdlp_exe: Path = PROJECT_ROOT / "tools" / "yt-dlp" / f"yt-dlp{EXECUTABLE_SUFFIX}"
     ffmpeg_bin: Path = PROJECT_ROOT / "tools" / "ffmpeg" / "bin"
     playwright_browsers_path: Path = PROJECT_ROOT / "tools" / "playwright-browsers"
 

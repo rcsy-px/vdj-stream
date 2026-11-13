@@ -2,7 +2,13 @@
 
 #include <sstream>
 #include <vector>
+#ifdef VDJ_WIN
 #include <winhttp.h>
+#else
+#include <cstdio>
+constexpr HRESULT E_FAIL = static_cast<HRESULT>(0x80004005L);
+constexpr DWORD ERROR_WINHTTP_TIMEOUT = 12002;
+#endif
 
 #ifndef VDJ_COMPANION_VERSION
 #define VDJ_COMPANION_VERSION "dev"
@@ -10,10 +16,12 @@
 
 namespace
 {
+#ifdef VDJ_WIN
 constexpr wchar_t kHost[] = L"127.0.0.1";
 constexpr INTERNET_PORT kPort = 8765;
 // Backend enforces a 55-second whole-request deadline.
 constexpr int kBackendTimeoutMs = 65000;
+#endif
 
 std::vector<std::string> Split(const std::string& value, char separator)
 {
@@ -53,7 +61,11 @@ HRESULT VDJ_API VdjCompanionSource::OnSearch(
         &statusCode);
     if (statusCode != 200)
     {
+#ifdef VDJ_WIN
         OutputDebugStringA("VDJ Companion search failed. Check Live logs in the local control panel.\n");
+#else
+        std::fputs("VDJ Companion search failed. Check Live logs.\n", stderr);
+#endif
         tracksList->finish();
         return E_FAIL;
     }
@@ -106,7 +118,11 @@ HRESULT VDJ_API VdjCompanionSource::GetStreamUrl(
         else if (statusCode == 503)
             errorMessage = "YouTube engine is busy or updating. Try again in a moment.";
         else if (statusCode == 0)
+#ifdef VDJ_MAC
+            errorMessage = "VDJ Companion backend is unreachable. Open START.command and check the control panel.";
+#else
             errorMessage = "VDJ Companion backend is unreachable. Run START.bat and check the control panel.";
+#endif
         else
             errorMessage = "Could not load this track. Run diagnostics or update yt-dlp in the control panel.";
         return E_FAIL;
@@ -115,6 +131,7 @@ HRESULT VDJ_API VdjCompanionSource::GetStreamUrl(
     return S_OK;
 }
 
+#ifdef VDJ_WIN
 std::string VdjCompanionSource::HttpGet(
     const std::wstring& path, DWORD* statusCode, DWORD* networkError)
 {
@@ -191,6 +208,8 @@ std::string VdjCompanionSource::HttpGet(
     WinHttpCloseHandle(session);
     return body;
 }
+
+#endif
 
 std::wstring VdjCompanionSource::UrlEncode(const char* value)
 {

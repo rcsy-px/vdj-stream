@@ -73,7 +73,7 @@ class YtDlpRunner:
 
     async def _execute(self, *args: str, timeout: float = 45) -> str:
         if not self.executable.is_file():
-            raise RuntimeError("yt-dlp is missing. Run START.bat to install it.")
+            raise RuntimeError("yt-dlp is missing. Run the platform launcher (START.bat or START.command) to install it.")
         process = await asyncio.create_subprocess_exec(
             str(self.executable), "--ignore-config", *args,
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,

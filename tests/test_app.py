@@ -120,6 +120,8 @@ async def test_update_checker_caches_failure(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_update_checker_rejects_untrusted_release_urls(monkeypatch) -> None:
+    from types import SimpleNamespace
+    monkeypatch.setattr("backend.app.update_checker.sys", SimpleNamespace(platform="win32"))
     class FakeResponse:
         def raise_for_status(self) -> None:
             return None

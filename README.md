@@ -4,6 +4,9 @@
 
 <h1 align="center">VDJ Companion</h1>
 
+> **macOS preview branch:** see [Mac setup and testing](docs/MACOS.md).
+> The stable Windows download and its release channel are unchanged.
+
 <p align="center">
   Search YouTube inside VirtualDJ. Drag a result onto a deck. Start mixing.
 </p>

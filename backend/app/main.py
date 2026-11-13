@@ -85,7 +85,7 @@ def _health_payload() -> dict:
     chromium_installed = chromium_executable(settings.playwright_browsers_path) is not None
     tools = {
         "ytDlp": settings.ytdlp_exe.exists(),
-        "ffmpeg": (settings.ffmpeg_bin / "ffmpeg.exe").exists(),
+        "ffmpeg": (settings.ffmpeg_bin / ("ffmpeg.exe" if os.name == "nt" else "ffmpeg")).exists(),
         "chromium": chromium_installed,
         "playwrightBrowsersPath": str(settings.playwright_browsers_path),
     }

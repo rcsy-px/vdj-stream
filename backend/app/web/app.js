@@ -60,7 +60,7 @@ async function health() {
     $("connection-led").className = "led online";
   } catch {
     ready("backend-ready", false, "Offline");
-    $("connection").textContent = "Backend offline · run START.bat";
+    $("connection").textContent = "Backend offline · open the launcher";
     $("connection-led").className = "led offline";
   }
 }
@@ -188,7 +188,7 @@ $("shutdown").addEventListener("click", async () => {
     await api("/api/shutdown", {method: "POST", headers: {"X-Shutdown-Token": token}});
     stopped = true; events.close();
     clearInterval(healthTimer); clearInterval(updateTimer); clearInterval(clockTimer);
-    $("message").textContent = "Backend stopped. Run START.bat to reconnect.";
+    $("message").textContent = "Backend stopped. Open the launcher to reconnect.";
     $("connection").textContent = "Backend stopped"; $("connection-led").className = "led offline";
     $("log-status").textContent = "DISCONNECTED"; ready("backend-ready", false, "Stopped");
     $("check-updates").disabled = true; $("update-ytdlp").disabled = true;

@@ -2,6 +2,7 @@ import asyncio
 import re
 import secrets
 import time
+import sys
 from typing import Any
 
 import httpx
@@ -107,7 +108,9 @@ class GitHubReleaseChecker:
             (
                 asset.get("browser_download_url")
                 for asset in assets
-                if str(asset.get("name", "")).endswith("-windows-x64.zip")
+                if str(asset.get("name", "")).endswith(
+                    "-macos-universal.zip" if sys.platform == "darwin" else "-windows-x64.zip"
+                )
                 and str(asset.get("browser_download_url", "")).startswith(
                     f"{release_prefix}download/"
                 )
@@ -119,6 +122,7 @@ class GitHubReleaseChecker:
             "latestVersion": latest_version or None,
             "updateAvailable": bool(
                 current_tuple and latest_tuple and latest_tuple > current_tuple
+                and (sys.platform != "darwin" or download_url)
             ),
             "releaseUrl": release_url,
             "downloadUrl": download_url,

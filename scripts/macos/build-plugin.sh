@@ -26,4 +26,4 @@ cat > "$bundle/Contents/Info.plist" <<EOF
 EOF
 codesign --force --sign - "$bundle"
 codesign --verify --strict "$bundle"
-lipo -verify_arch arm64 x86_64 "$bundle/Contents/MacOS/VDJCompanionSource"
+lipo "$bundle/Contents/MacOS/VDJCompanionSource" -verify_arch arm64 x86_64

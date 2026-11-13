@@ -89,6 +89,9 @@ def main():
             os.execv(str(ROOT / '.venv/bin/python'), [str(ROOT / '.venv/bin/python'), str(ROOT / 'scripts/macos/runtime.py'), 'start'])
         # Refuse to share a port with another copy or another application.
         with socket.socket() as probe:
+            # A stopped server can leave TIME_WAIT sockets behind. Uvicorn also
+            # uses SO_REUSEADDR; use the same policy for this preflight check.
+            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 probe.bind(("127.0.0.1", 8765))
             except OSError:

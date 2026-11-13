@@ -46,19 +46,7 @@ if [ ! -x tools/yt-dlp/yt-dlp ]; then
   mv "$tmp/yt-dlp_macos" tools/yt-dlp/yt-dlp
 fi
 tools/yt-dlp/yt-dlp --ignore-config --version
-for name in ffmpeg ffprobe; do
-  candidate="${FFMPEG_BIN_DIR:-}/$name"
-  if [ ! -x "$candidate" ]; then candidate=$(command -v "$name" || true); fi
-  if [ -z "$candidate" ] || [ ! -x "$candidate" ]; then
-    echo "Install FFmpeg first (brew install ffmpeg), then reopen START.command." >&2
-    echo "Alternatively set FFMPEG_BIN_DIR to a folder containing ffmpeg and ffprobe." >&2
-    exit 1
-  fi
-  candidate=$(.venv/bin/python -c 'import pathlib,sys; print(pathlib.Path(sys.argv[1]).resolve(strict=True))' "$candidate")
-  if [ "$candidate" != "$PWD/tools/ffmpeg/bin/$name" ]; then
-    ln -sfn "$candidate" "tools/ffmpeg/bin/$name"
-  fi
-done
+.venv/bin/python scripts/macos/install_ffmpeg.py
 .venv/bin/python -m playwright install chromium
 if [ "${1:-}" != --skip-plugin-install ]; then
   .venv/bin/python scripts/macos/install_plugin.py

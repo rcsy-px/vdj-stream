@@ -16,7 +16,7 @@ entries = {}
 for name in ("START.command", "STOP.command", "VERSION", "MACOS_VERSION", "LICENSE", "pyproject.toml", "uv.lock"):
     entries[name] = ROOT / name
 entries["README.md"] = ROOT / "docs/MACOS.md"
-for name in ("setup.sh", "runtime.py", "install_plugin.py", "apply_update.py"):
+for name in ("setup.sh", "runtime.py", "install_plugin.py", "install_ffmpeg.py", "apply_update.py"):
     entries[f"scripts/macos/{name}"] = ROOT / "scripts/macos" / name
 for name in ("backend", "docs/assets"):
     for path in (ROOT / name).rglob("*"):

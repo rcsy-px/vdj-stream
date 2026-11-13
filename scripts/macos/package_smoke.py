@@ -113,12 +113,16 @@ runpy.run_path('scripts/macos/runtime.py', run_name='__main__')
             env={**env, 'UPDATE_FIXTURE': str(fixture)}, stdout=log, stderr=log)
         try:
             for _ in range(60):
+                if process.poll() is not None:
+                    raise RuntimeError('Update test backend exited before becoming ready')
                 try:
                     with urllib.request.urlopen('http://127.0.0.1:8765/') as response:
                         html = response.read().decode()
                     break
                 except OSError:
                     time.sleep(.5)
+            else:
+                raise TimeoutError('Update test backend did not start')
             token = re.search(r'<meta name="control-token" content="([^"]+)"', html)[1]
             with urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8765/api/update/install',
                     method='POST', headers={'X-Shutdown-Token': token}), timeout=180) as response:

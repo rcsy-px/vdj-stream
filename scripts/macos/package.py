@@ -4,8 +4,8 @@ from pathlib import Path
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
-version = (ROOT / "VERSION").read_text().strip()
-prefix = f"vdj-companion-{version}-macos-preview"
+version = (ROOT / "MACOS_VERSION").read_text().strip()
+prefix = f"vdj-companion-{version}"
 dist = ROOT / "dist"
 dist.mkdir(exist_ok=True)
 archive = dist / f"{prefix}-macos-universal.zip"
@@ -13,10 +13,10 @@ bundle = ROOT / "plugin/online-source/build/macos/VDJ Companion Source.bundle"
 if not (bundle / "Contents/MacOS/VDJCompanionSource").is_file():
     raise SystemExit("Build the macOS bundle before packaging.")
 entries = {}
-for name in ("START.command", "STOP.command", "VERSION", "LICENSE", "pyproject.toml", "uv.lock"):
+for name in ("START.command", "STOP.command", "VERSION", "MACOS_VERSION", "LICENSE", "pyproject.toml", "uv.lock"):
     entries[name] = ROOT / name
 entries["README.md"] = ROOT / "docs/MACOS.md"
-for name in ("setup.sh", "runtime.py", "install_plugin.py"):
+for name in ("setup.sh", "runtime.py", "install_plugin.py", "apply_update.py"):
     entries[f"scripts/macos/{name}"] = ROOT / "scripts/macos" / name
 for name in ("backend", "docs/assets"):
     for path in (ROOT / name).rglob("*"):

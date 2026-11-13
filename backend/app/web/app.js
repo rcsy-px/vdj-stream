@@ -65,7 +65,9 @@ async function health() {
   }
 }
 function renderApp(update) {
+  if (updating) return;
   appUpdate = update;
+  $("install-app-update").hidden = !update.canInstall;
   $("latest-version").textContent = update.latestVersion || "Unavailable";
   $("app-actions").hidden = true;
   $("restore-update").hidden = true;
@@ -76,7 +78,7 @@ function renderApp(update) {
   } else if (update.updateAvailable) {
     const skipped = storage.get() === update.latestVersion;
     badge("app-badge", skipped ? "SKIPPED" : "UPDATE AVAILABLE", "warn");
-    $("update-status").textContent = skipped ? `Version ${update.latestVersion} skipped. You can show it again below.` : `Version ${update.latestVersion} is available. Open the release page to download and install it.`;
+    $("update-status").textContent = skipped ? `Version ${update.latestVersion} skipped. You can show it again below.` : `Version ${update.latestVersion} is available. ${update.canInstall ? "Close VirtualDJ, then install the update below. Companion will restart." : "Open the release page to download and install it."}`;
     $("restore-update").hidden = !skipped;
     $("app-actions").hidden = skipped || !update.releaseUrl;
     if (update.releaseUrl) $("view-update").href = update.releaseUrl;
@@ -201,3 +203,40 @@ healthTimer = setInterval(health, 15000);
 updateTimer = setInterval(() => checkUpdates(), 60000);
 clockTimer = setInterval(uptime, 1000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !stopped) { health(); checkUpdates(); } });
+
+$("install-app-update").addEventListener("click", async () => {
+  if (updating || diagnosing || stopped) return;
+  if (!confirm("Close VirtualDJ before continuing. Download and install the update, then restart Companion?")) return;
+  updating = true;
+  for (const id of ["install-app-update", "check-updates", "update-ytdlp", "run-diagnostics", "shutdown"]) $(id).disabled = true;
+  badge("app-badge", "UPDATING", "warn");
+  $("update-status").textContent = "Downloading and verifying the update…";
+  try {
+    const job = await api("/api/update/install", {method: "POST", headers: {"X-Shutdown-Token": token}});
+    clearInterval(healthTimer); clearInterval(updateTimer);
+    $("update-status").textContent = "Installing and restarting Companion. Keep this window open; this can take several minutes.";
+    for (let attempt = 0; attempt < 750; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      let result;
+      try { result = await api("/api/health"); } catch { continue; }
+      if (result.appUpdateResult?.id === job.id) {
+        // Reload even after rollback: the restarted server has a new control token.
+        sessionStorage.setItem("vdj-app-update-result", JSON.stringify(result.appUpdateResult));
+        location.reload(); return;
+      }
+    }
+    throw new Error("Companion has not reconnected. Check the launcher Terminal and reopen START.command if needed.");
+  } catch (error) {
+    $("update-status").textContent = error.message;
+    badge("app-badge", "UPDATE FAILED", "error");
+    updating = false;
+    for (const id of ["install-app-update", "check-updates", "update-ytdlp", "run-diagnostics", "shutdown"]) $(id).disabled = false;
+  }
+});
+try {
+  const notice = sessionStorage.getItem("vdj-app-update-result");
+  if (notice) {
+    sessionStorage.removeItem("vdj-app-update-result");
+    $("message").textContent = JSON.parse(notice).message;
+  }
+} catch {}

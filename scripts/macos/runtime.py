@@ -33,6 +33,27 @@ def healthy():
         return False
 
 
+def apply_pending(recover=False):
+    active = ROOT / 'data/macos-update-active.json'
+    pending = ROOT / 'data/macos-update-pending.json'
+    if not recover:
+        if not pending.exists():
+            return False
+        pending.replace(active)
+    elif not active.exists():
+        return False
+    request = json.loads(active.read_text())
+    job = (ROOT / '.cache' / request['job']).resolve()
+    if job.parent != (ROOT / '.cache').resolve() or not job.name.startswith('app-update-'):
+        raise RuntimeError('Invalid update job path.')
+    command = [sys.executable, str(job / 'apply_update.py'), str(ROOT)]
+    if recover:
+        command.append('--recover')
+    with (job / 'update.log').open('a') as log:
+        subprocess.run(command, stdout=log, stderr=log, check=True)
+    return True
+
+
 def main():
     (ROOT / "data").mkdir(exist_ok=True)
     with (ROOT / "data/macos-runtime.lock").open("a+") as lock:
@@ -62,6 +83,9 @@ def main():
             if os.environ.get("VDJ_NO_BROWSER") != "1":
                 subprocess.run(["open", BASE], check=True)
             return
+        apply_pending(recover=True)
+        if apply_pending():
+            os.execv(str(ROOT / '.venv/bin/python'), [str(ROOT / '.venv/bin/python'), str(ROOT / 'scripts/macos/runtime.py'), 'start'])
         # Refuse to share a port with another copy or another application.
         with socket.socket() as probe:
             try:
@@ -77,8 +101,15 @@ def main():
                 time.sleep(.5)
         threading.Thread(target=open_when_ready, daemon=True).start()
         import uvicorn
+        os.environ['VDJ_MANAGED_LAUNCHER'] = '1'
+        from backend.app.main import app
+        server = uvicorn.Server(uvicorn.Config(app, host='127.0.0.1', port=8765, timeout_graceful_shutdown=5))
+        app.state.request_shutdown = lambda: setattr(server, 'should_exit', True)
         print("Leave this Terminal window open. Use STOP.command or Ctrl+C to stop.")
-        uvicorn.run("backend.app.main:app", host="127.0.0.1", port=8765)
+        server.run()
+        if apply_pending():
+            os.environ['VDJ_NO_BROWSER'] = '1'
+            os.execv(str(ROOT / '.venv/bin/python'), [str(ROOT / '.venv/bin/python'), str(ROOT / 'scripts/macos/runtime.py'), 'start'])
 
 
 if __name__ == "__main__":

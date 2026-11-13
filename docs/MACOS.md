@@ -7,8 +7,8 @@ still need validation by Mac users; automated tests do not replace that check.
 
 ## First start
 
-1. Download the **macOS preview artifact** from the `macOS preview` GitHub Actions
-   run for the `feature/macos` branch. Extract the artifact, then the ZIP inside it.
+1. Download the **macOS ZIP** from the [public beta releases](https://github.com/rcsy-px/vdj-stream/releases).
+   No GitHub account is needed. Extract the ZIP.
    Keep the extracted Companion folder somewhere permanent and writable.
 2. Install FFmpeg and ffprobe. If you use [Homebrew](https://brew.sh), run
    `brew install ffmpeg`. Alternatively, supply your existing FFmpeg folder with
@@ -22,8 +22,17 @@ still need validation by Mac users; automated tests do not replace that check.
 Double-click **STOP.command**, use the control panel's shutdown button, or press
 Ctrl+C in the launcher's Terminal to stop Companion. No login service is installed.
 The web control panel and yt-dlp update button work the same way as on Windows.
-Preview updates are installed manually from a new preview ZIP; the app will never
-offer a Windows ZIP as a Mac update.
+The app automatically checks the separate Mac release channel, including newer
+betas. Close VirtualDJ, then click **Install update & restart** in the control
+panel. Companion verifies the download checksum, backs up its files and Python
+environment, installs the new version and plugin, and restarts. If installation
+fails, it restores the previous files. User data and settings stay in place.
+Updates are never installed silently while you are using VirtualDJ.
+
+**Upgrading from beta 1:** install this version manually once; beta 1 did not yet
+include the app updater. After that, updates can be installed from the panel.
+Keep the launcher Terminal open during updates. Backups and an `update.log` remain
+in `.cache/app-update-*`; they can be removed after confirming the new version works.
 
 ## macOS security prompts
 

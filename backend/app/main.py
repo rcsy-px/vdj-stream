@@ -4,6 +4,8 @@ import os
 import secrets
 import signal
 import time
+import sys
+import json
 import httpx
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -26,6 +28,8 @@ from .stream.naming import stream_url
 from .stream.resolver import YtDlpResolver
 from .update_checker import GitHubReleaseChecker
 from .ytdlp_updates import YtDlpUpdates
+from .macos_releases import MacReleaseChecker
+from .macos_updates import MacAppUpdates
 
 settings = get_settings()
 settings.prepare_directories()
@@ -48,12 +52,13 @@ resolver = YtDlpResolver(
     settings.resolve_cache_ttl_seconds,
     runner=ytdlp_runner,
 )
-update_checker = GitHubReleaseChecker(
+update_checker = (MacReleaseChecker if sys.platform == 'darwin' else GitHubReleaseChecker)(
     settings.version,
     settings.github_repository,
     settings.update_check_cache_ttl_seconds,
     settings.update_check_timeout_seconds,
 )
+app_updates = MacAppUpdates(Path(__file__).resolve().parents[2], update_checker)
 ytdlp_updates = YtDlpUpdates(settings.ytdlp_exe, runner=ytdlp_runner)
 diagnostics = Diagnostics(ytdlp_search, browser_search, resolver, ytdlp_updates)
 
@@ -89,7 +94,7 @@ def _health_payload() -> dict:
         "chromium": chromium_installed,
         "playwrightBrowsersPath": str(settings.playwright_browsers_path),
     }
-    return {
+    result = {
         "ok": tools["ytDlp"] and tools["ffmpeg"] and tools["chromium"],
         "service": settings.service_name,
         "version": settings.version,
@@ -97,6 +102,12 @@ def _health_payload() -> dict:
         "uptimeSeconds": max(0, int(time.time()) - started_at),
         "tools": tools,
     }
+    if sys.platform == 'darwin':
+        try:
+            result['appUpdateResult'] = json.loads((settings.data_dir / 'macos-update-result.json').read_text())
+        except (OSError, ValueError):
+            pass
+    return result
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
@@ -124,7 +135,29 @@ async def health() -> dict:
 @app.get("/api/update", include_in_schema=False)
 async def update_status(response: Response, refresh: bool = False) -> dict:
     response.headers["Cache-Control"] = "no-store"
-    return await update_checker.check(force=refresh)
+    result = dict(await update_checker.check(force=refresh))
+    if sys.platform == 'darwin':
+        result['canInstall'] = app_updates.supported
+    return result
+
+
+@app.post('/api/update/install', include_in_schema=False)
+async def install_app_update(request: Request):
+    if not _is_loopback(request) or request.headers.get('x-shutdown-token') != shutdown_token:
+        raise HTTPException(403, 'Updates are only available from the local control panel')
+    if not app_updates.supported:
+        raise HTTPException(409, 'Start the macOS app with START.command to install updates.')
+    if diagnostics.running or ytdlp_updates._update_lock.locked():
+        raise HTTPException(409, 'Wait for diagnostics or the yt-dlp update to finish.')
+    try:
+        result = await app_updates.prepare()
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except Exception as exc:
+        logger.warning('Could not prepare app update: %s', exc)
+        raise HTTPException(502, 'Could not download or verify the update. Nothing was installed.') from exc
+    asyncio.create_task(_stop_process())
+    return {'ok': True, 'id': result['id'], 'version': result['version']}
 
 
 @app.get("/api/ytdlp", include_in_schema=False)
@@ -137,6 +170,8 @@ async def ytdlp_status(response: Response, refresh: bool = False) -> dict:
 async def update_ytdlp(request: Request) -> dict:
     if not _is_loopback(request) or request.headers.get("x-shutdown-token") != shutdown_token:
         raise HTTPException(403, "Updates are only available from the local control panel")
+    if app_updates.in_progress:
+        raise HTTPException(409, 'An application update is running.')
     try:
         result = await ytdlp_updates.update()
     except RuntimeError as exc:
@@ -171,6 +206,10 @@ def _is_loopback(request: Request) -> bool:
 
 async def _stop_process() -> None:
     await asyncio.sleep(0.25)
+    callback = getattr(app.state, 'request_shutdown', None)
+    if callback:
+        callback()
+        return
     os.kill(os.getpid(), signal.SIGTERM)
 
 
@@ -333,6 +372,8 @@ async def _youtube_stream(
 
 @app.post("/api/diagnostics", include_in_schema=False)
 async def run_diagnostics(request: Request) -> dict:
+    if app_updates.in_progress:
+        raise HTTPException(409, 'An application update is running.')
     if not _is_loopback(request) or request.headers.get("x-shutdown-token") != shutdown_token:
         raise HTTPException(403, "Diagnostics are only available from the local control panel")
     if diagnostics.running:

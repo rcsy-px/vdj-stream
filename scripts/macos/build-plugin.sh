@@ -2,12 +2,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 version=$(cat VERSION | tr -d '\r\n')
+preview=$(cat MACOS_VERSION | tr -d '\r\n')
 bundle="plugin/online-source/build/macos/VDJ Companion Source.bundle"
 mkdir -p "$bundle/Contents/MacOS"
 xcrun clang++ -std=c++17 -O2 -bundle -fvisibility=hidden \
   -arch arm64 -arch x86_64 -mmacosx-version-min=14.0 \
   -Iplugin/sdk -Iplugin/online-source/src \
-  -DVDJ_COMPANION_VERSION="\"$version-macos-preview\"" \
+  -DVDJ_COMPANION_VERSION="\"$preview-macos-preview\"" \
   plugin/online-source/src/Main.cpp plugin/online-source/src/VdjCompanionSource.cpp \
   plugin/online-source/platform/macos/HttpClient.cpp \
   -framework CoreFoundation -lcurl -o "$bundle/Contents/MacOS/VDJCompanionSource"

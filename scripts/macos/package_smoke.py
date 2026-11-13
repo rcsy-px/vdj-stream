@@ -6,6 +6,9 @@ import subprocess
 import tempfile
 import time
 import urllib.request
+import re
+import zipfile
+import hashlib
 
 ROOT = Path(__file__).resolve().parents[2]
 archive, = (ROOT / "dist").glob("*-macos-universal.zip")
@@ -68,4 +71,83 @@ asyncio.run(check())
                 process.wait(timeout=15)
             log.seek(0)
             print(log.read())
+    # Offer a fixture release through the real authenticated update endpoint.
+    # It uses the actual packaged files and native bundle, with a newer version.
+    fixture = destination / 'next-macos-universal.zip'
+    next_version = '0.2.0-beta.999'
+    with zipfile.ZipFile(archive) as source, zipfile.ZipFile(fixture, 'w', zipfile.ZIP_DEFLATED) as output:
+        for item in source.infolist():
+            content = source.read(item)
+            if item.filename.endswith('/MACOS_VERSION'):
+                content = (next_version + '\n').encode()
+            output.writestr(item, content)
+    digest = hashlib.sha256(fixture.read_bytes()).hexdigest()
+    harness = destination / 'update_harness.py'
+    harness.write_text('''
+import hashlib, os, runpy, sys
+from pathlib import Path
+import httpx
+sys.path.insert(0, os.getcwd())
+from backend.app import main
+payload = Path(os.environ['UPDATE_FIXTURE']).read_bytes()
+digest = hashlib.sha256(payload).hexdigest()
+async def fetch():
+    return {'currentVersion': main.settings.version, 'latestVersion': '0.2.0-beta.999',
+        'updateAvailable': True, 'assetName': 'next-macos-universal.zip',
+        'releaseUrl': 'https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.2.0-beta.999',
+        'downloadUrl': 'https://fixture.invalid/next-macos-universal.zip',
+        'checksumUrl': 'https://fixture.invalid/next-macos-universal.zip.sha256',
+        'assetDigest': 'sha256:' + digest}
+main.update_checker._fetch = fetch
+original = httpx.AsyncClient
+def handler(request):
+    assert request.url.host == 'fixture.invalid'
+    return httpx.Response(200, content=(digest + '  next-macos-universal.zip\\n').encode()
+        if request.url.path.endswith('.sha256') else payload)
+httpx.AsyncClient = lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs)
+sys.argv = ['runtime.py', 'start']
+runpy.run_path('scripts/macos/runtime.py', run_name='__main__')
+''', encoding='utf-8')
+    with (destination / 'update-runtime.log').open('w+') as log:
+        process = subprocess.Popen([python, str(harness)], cwd=app,
+            env={**env, 'UPDATE_FIXTURE': str(fixture)}, stdout=log, stderr=log)
+        try:
+            for _ in range(60):
+                try:
+                    with urllib.request.urlopen('http://127.0.0.1:8765/') as response:
+                        html = response.read().decode()
+                    break
+                except OSError:
+                    time.sleep(.5)
+            token = re.search(r'<meta name="control-token" content="([^"]+)"', html)[1]
+            with urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8765/api/update/install',
+                    method='POST', headers={'X-Shutdown-Token': token}), timeout=180) as response:
+                job = json.load(response)
+            for _ in range(600):
+                if process.poll() is not None:
+                    raise RuntimeError('Updater/launcher exited before restarting')
+                try:
+                    with urllib.request.urlopen('http://127.0.0.1:8765/api/health', timeout=1) as response:
+                        health = json.load(response)
+                    if health.get('appUpdateResult', {}).get('id') == job['id']:
+                        assert health['appUpdateResult']['ok'], health
+                        assert health['version'] == next_version and health['ok'], health
+                        break
+                except OSError:
+                    pass
+                time.sleep(1)
+            else:
+                raise TimeoutError('Automatic update did not restart the backend')
+            assert list((app / '.cache').glob('app-update-*/backup'))
+            subprocess.run([str(app / 'STOP.command')], cwd=app, env=env, check=True, timeout=15)
+            assert process.wait(timeout=15) == 0
+        finally:
+            if process.poll() is None:
+                process.terminate()
+                process.wait(timeout=15)
+            log.seek(0)
+            print(log.read())
+            for update_log in (app / '.cache').glob('app-update-*/update.log'):
+                print(update_log.read_text())
 print("Extracted package: setup, plugin install, Chromium, health and shutdown passed.")
+print('Automatic app update: authenticated download, checksum, backup, install and restart passed.')

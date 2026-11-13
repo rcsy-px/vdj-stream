@@ -9,13 +9,15 @@ from pydantic import Field
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PROJECT_VERSION = (PROJECT_ROOT / "VERSION").read_text(encoding="ascii").strip()
 EXECUTABLE_SUFFIX = ".exe" if sys.platform == "win32" else ""
+APP_VERSION = ((PROJECT_ROOT / "MACOS_VERSION").read_text().strip()
+               if sys.platform == "darwin" else PROJECT_VERSION)
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=PROJECT_ROOT / ".env", extra="ignore")
 
     service_name: str = "vdj-youtube-companion"
-    version: str = PROJECT_VERSION
+    version: str = APP_VERSION
     host: str = "127.0.0.1"
     port: int = 8765
     public_base_url: str = "http://127.0.0.1:8765"

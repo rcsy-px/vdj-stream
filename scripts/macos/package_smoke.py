@@ -21,7 +21,26 @@ with tempfile.TemporaryDirectory(prefix="Companion clean install ") as temporary
     (home / "PluginsMacArm").mkdir(parents=True)
     (home / "Plugins64").mkdir()
     env = {**os.environ, "VDJ_HOME": str(home), "VDJ_NO_BROWSER": "1"}
+    # Fail before Python installation: the real launcher must retain the error
+    # in a file and return nonzero instead of masking it behind tee's exit code.
+    lock = app / '.cache/macos-setup.lock'
+    lock.mkdir(parents=True)
+    failed = subprocess.run([str(app / 'START.command')], cwd=app, env=env,
+        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30)
+    assert failed.returncode != 0, failed.stdout
+    failure_logs = list((app / 'data/logs').glob('setup-*.log'))
+    assert len(failure_logs) == 1
+    failure_text = failure_logs[0].read_text()
+    assert 'Setup is already running' in failure_text and 'Setup failed (exit 1)' in failure_text
+    assert failure_logs[0].stat().st_mode & 0o077 == 0
+    assert not (app / '.venv').exists(), 'Logging must work before Python setup'
+    lock.rmdir()
     subprocess.run(["bash", "scripts/macos/setup.sh"], cwd=app, env=env, check=True, timeout=1200)
+    setup_logs = list((app / 'data/logs').glob('setup-*.log'))
+    assert len(setup_logs) == 2 and failure_logs[0].read_text() == failure_text
+    success_log, = [path for path in setup_logs if path != failure_logs[0]]
+    assert 'Setup succeeded.' in success_log.read_text()
+    assert 'Downloading ffmpeg' in success_log.read_text()
     # Fresh setup must install actual private tools, even if Homebrew exists on CI.
     for name in ('ffmpeg', 'ffprobe'):
         binary = app / 'tools/ffmpeg/bin' / name

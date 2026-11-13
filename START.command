@@ -12,8 +12,8 @@ if [ -x .venv/bin/python ] && .venv/bin/python scripts/macos/runtime.py status >
   exec .venv/bin/python scripts/macos/runtime.py start
 fi
 if ! bash scripts/macos/setup.sh; then
-  echo "Setup failed. Read the message above and docs/MACOS.md."
-  read -r -p "Press Return to close. " _
+  echo "Setup failed. See data/logs/setup-*.log and docs/MACOS.md."
+  if [ -t 0 ]; then read -r -p "Press Return to close. " _; fi
   exit 1
 fi
 exec .venv/bin/python scripts/macos/runtime.py start

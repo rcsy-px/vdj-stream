@@ -1,21 +1,19 @@
-# Library preview: local test guide
+# Library, setlists and video
 
-This development build adds setlists, offline audio downloads and prepared video
-files. It has not been published as a release. The Windows build is
-`0.3.0.dev1`; Mac source changes are present but still need a Mac build and test.
+Available in Windows 0.3.0 and macOS 0.3.0 beta 1. The macOS build remains a public beta; real-device VirtualDJ testing is still needed.
 
 ## Prepare a Windows test session
 
 1. Quit VirtualDJ and stop the previously installed Companion backend.
 2. Keep the stable Companion folder. Back up the existing
    `VDJ Companion Source.dll` from your VirtualDJ home's
-   `Plugins64/OnlineSources` folder before installing this preview.
-3. Extract the preview ZIP to a **new permanent folder**, then run its
-   `START.bat`. The launcher installs the preview source plugin.
-4. Confirm the panel shows **0.3.0.dev1**, then open VirtualDJ.
+   `Plugins64/OnlineSources` folder before installing this version.
+3. Extract the release ZIP to a **new permanent folder**, then run its
+   `START.bat`. The launcher installs the source plugin.
+4. Confirm the panel shows **0.3.0**, then open VirtualDJ.
 
-The preview uses its own data folder. Do not run two Companion backends on port
-8765 at once. To roll back, quit VirtualDJ, stop the preview backend, restore the
+The new installation uses its own data folder. Do not run two Companion backends on port
+8765 at once. To roll back, quit VirtualDJ, stop the new backend, restore the
 backed-up DLL and start the stable Companion again. Your existing VirtualDJ
 database and History are not modified by the history importer.
 
@@ -36,7 +34,7 @@ select an existing one. This becomes the active destination for VirtualDJ's
 **Add to active Companion setlist** context-menu action.
 
 Search inside **VDJ Companion Source**, right-click a result and add it. The
-source's subfolders include **Setlist: …** folders containing your saved tracks.
+source's subfolders include **Setlist: â€¦** folders containing your saved tracks.
 Reopen a folder after changes if VirtualDJ still shows the previous contents.
 The same track is added only once per list; audio and video versions are distinct.
 

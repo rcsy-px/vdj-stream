@@ -1,12 +1,12 @@
 {
-  "version": "0.3.0.dev1",
-  "sha256": "6c29ae7e0866f44a35508c13a1d60cadcd6fc3dc8a879fd29b86ac588162df8c",
+  "sha256": "b087fa066d562d6531b187c9126d05bca532d4cdd3c9ce6c46235678a492c2b2",
   "sources": {
-    "plugin/online-source/VdjCompanionSource.vcxproj": "bc129010b955a164b01862b0ca4c75bf0d47bd03edf1ad5af9493baadd6d4dd7",
     "plugin/online-source/src/Main.cpp": "857cfa7e4ba58f52f1a4e40e09379dbce2890e725dd419592a47aa5c4b5d2513",
-    "plugin/online-source/src/VdjCompanionSource.h": "42d76f2886d1566a704da1c390fda08f3fe7f4b631b7fa99813118f7bf171c28",
     "plugin/online-source/src/VdjCompanionSource.cpp": "ecb38446512723b6b5625dbdbf196ae1f7c7bc9f8414d0ddc1d607890b2d5ff9",
-    "plugin/sdk/vdjPlugin8.h": "95b6a10e148ccde71bc1bf254e690c2adab7f71e2efe574ea7311a35b64c6f40",
-    "plugin/sdk/vdjOnlineSource.h": "ded958c43de84dbc04bb86e2cd10d7ce27e251b6d03d04c02f77b559af541f6d"
-  }
+    "plugin/sdk/vdjOnlineSource.h": "ded958c43de84dbc04bb86e2cd10d7ce27e251b6d03d04c02f77b559af541f6d",
+    "plugin/online-source/src/VdjCompanionSource.h": "42d76f2886d1566a704da1c390fda08f3fe7f4b631b7fa99813118f7bf171c28",
+    "plugin/online-source/VdjCompanionSource.vcxproj": "bc129010b955a164b01862b0ca4c75bf0d47bd03edf1ad5af9493baadd6d4dd7",
+    "plugin/sdk/vdjPlugin8.h": "95b6a10e148ccde71bc1bf254e690c2adab7f71e2efe574ea7311a35b64c6f40"
+  },
+  "version": "0.3.0"
 }

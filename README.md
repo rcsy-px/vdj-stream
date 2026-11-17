@@ -4,8 +4,8 @@
 
 <h1 align="center">VDJ Companion</h1>
 
-> **Local development preview:** setlists, offline audio and video preparation.
-> See [the local test guide](docs/LIBRARY-PREVIEW.md). No new public release has been published.
+> **New in 0.3.0:** setlists, offline audio, prepared videos and remembered searches.
+> [Library guide](docs/LIBRARY-PREVIEW.md) · [macOS public beta](docs/MACOS.md)
 
 <p align="center">
   Search YouTube inside VirtualDJ. Drag a result onto a deck. Start mixing.
@@ -19,16 +19,18 @@
 
 <p align="center">
   <a href="https://github.com/rcsy-px/vdj-stream/releases/latest"><strong>Download for Windows</strong></a>
-  &nbsp; · &nbsp; <a href="#get-started">Get started</a>
-  &nbsp; · &nbsp; <a href="#troubleshooting">Troubleshooting</a>
-  &nbsp; · &nbsp; <a href="https://ko-fi.com/rycsypx">Support the project</a>
+  &nbsp; Â· &nbsp; <a href="#get-started">Get started</a>
+  &nbsp; Â· &nbsp; <a href="#troubleshooting">Troubleshooting</a>
+  &nbsp; Â· &nbsp; <a href="https://ko-fi.com/rycsypx">Support the project</a>
 </p>
 
 VDJ Companion adds a **YouTube source to VirtualDJ's own browser**, with a local
 companion service handling search and audio streaming. A retro control panel
 shows component status, live logs, and available updates.
 
-- Search and load tracks without leaving VirtualDJ.
+- Search and load tracks without leaving VirtualDJ; return to results with **Last search**.
+- Save setlists, download audio for offline use, and prepare videos up to 720p.
+- Browse played tracks from VirtualDJ History.
 - Set up with one launcher; no manual plugin copying or build tools required.
 - Update the YouTube engine from the control panel when a new version is available.
 
@@ -40,7 +42,7 @@ shows component status, live logs, and available updates.
    Choose `vdj-companion-<version>-windows-x64.zip`, then extract it to a folder you plan to keep.
 2. **Run `START.bat`.** First launch downloads the required tools, installs the
    plugin, and opens the control panel. Allow the setup to finish.
-3. **Restart VirtualDJ**, then select **Online Music → VDJ Companion Source**.
+3. **Restart VirtualDJ**, then select **Online Music â†’ VDJ Companion Source**.
 4. **Search for a track and drag a result onto a deck.**
 
 On later sessions, run `START.bat` before using the source. Keep the backend
@@ -70,9 +72,9 @@ then reload the track in VirtualDJ. YouTube changes can break an older engine.
 **VDJ Companion:** use **View update details on GitHub** when a release is available.
 Stop the backend and close VirtualDJ, extract the new release into a new permanent
 folder, and run its `START.bat`. This installs the bundled plugin; reopen VirtualDJ
-after setup. Use the new folder for future launches.
+after setup. Before starting the new copy, copy the old `data/library` folder into its `data` folder to preserve setlists and downloaded media. Use the new folder for future launches.
 
-Updates are never installed automatically. A skipped application update can be
+On Windows, updates are installed manually. On macOS, the panel can install an update and restart Companion after you close VirtualDJ. A skipped application update can be
 restored with **Show skipped update**. If a check fails, use **Check again** to retry.
 
 ## Troubleshooting
@@ -95,8 +97,8 @@ The backend listens only on `127.0.0.1`. No telemetry or separate companion acco
 is required. Search and streaming contact YouTube; update checks contact GitHub.
 Logs and caches stay on your computer.
 
-- **Developers:** [Contributing & builds](CONTRIBUTING.md) · [Architecture](docs/architecture.md) · [Portable tools](docs/portable-tools.md)
-- **Releases:** [Changelog](CHANGELOG.md) · [Verify a download](docs/portable-tools.md#verify-a-release-download)
+- **Developers:** [Contributing & builds](CONTRIBUTING.md) Â· [Architecture](docs/architecture.md) Â· [Portable tools](docs/portable-tools.md)
+- **Releases:** [Changelog](CHANGELOG.md) Â· [Verify a download](docs/portable-tools.md#verify-a-release-download)
 - **Security:** [Report a vulnerability](SECURITY.md)
 - **Support:** [Buy me a coffee on Ko-fi](https://ko-fi.com/rycsypx)
 

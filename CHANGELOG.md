@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 - 2026-11-17
+
+- Added persistent setlists and M3U8 export.
+- Added offline audio downloads and prepared H.264 video up to 720p.
+- Added read-only VirtualDJ History import and a Last search folder.
+- Added download queue controls, storage limits and media validation.
+- Labelled Companion context-menu actions.
+- Includes macOS 0.3.0 beta 1 with separate platform setup and update support.
+
 ## 0.2.0 - 2026-11-12
 
 Package revised on 2026-11-12 without a version bump:

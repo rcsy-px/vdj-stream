@@ -3,11 +3,11 @@
 Search YouTube inside VirtualDJ, then drag a result onto a deck. Companion runs
 alongside VirtualDJ and provides a browser control panel for status and updates.
 
-**Public beta · Intel and Apple Silicon · macOS 14 or later**
+**Public beta Â· Intel and Apple Silicon Â· macOS 14 or later**
 
-[Download beta 4](https://github.com/rcsy-px/vdj-stream/releases/download/macos-v0.2.0-beta.4/vdj-companion-0.2.0-beta.4-macos-universal.zip)
-· [Release notes](https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.2.0-beta.4)
-· [Report a problem](https://github.com/rcsy-px/vdj-stream/issues)
+[Download 0.3.0 beta 1](https://github.com/rcsy-px/vdj-stream/releases/download/macos-v0.3.0-beta.1/vdj-companion-0.3.0-beta.1-macos-universal.zip)
+Â· [Release notes](https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.3.0-beta.1)
+Â· [Report a problem](https://github.com/rcsy-px/vdj-stream/issues)
 
 No GitHub account is needed to download. Installation and update flows have
 automated tests on both Mac CPU families, but search and deck playback still need
@@ -25,7 +25,7 @@ installation. The launcher downloads the required tools into its own folder.
 ## Download and start Companion
 
 1. Download the **macOS ZIP** linked above. Under release **Assets**, choose
-   `vdj-companion-0.2.0-beta.4-macos-universal.zip`, not a source-code archive.
+   `vdj-companion-0.3.0-beta.1-macos-universal.zip`, not a source-code archive.
    The same ZIP works on Intel and Apple Silicon.
 2. Double-click the ZIP to extract it. Move the extracted folder somewhere
    permanent and writable, such as inside your home folder, **before** running it.
@@ -36,14 +36,14 @@ installation. The launcher downloads the required tools into its own folder.
    the tools and installs the plugin; allow several minutes and keep it open.
 5. The control panel opens in your browser. If it does not, visit
    [http://127.0.0.1:8765](http://127.0.0.1:8765/).
-6. Open VirtualDJ, select **Online Music / Online Sources → VDJ Companion Source**,
+6. Open VirtualDJ, select **Online Music / Online Sources â†’ VDJ Companion Source**,
    search for a track, and drag a result onto a deck.
 
 ### If macOS blocks opening a file
 
 This beta is ad-hoc signed, **not Apple Developer ID signed or notarized**.
 If the developer cannot be verified and you trust the download, try opening the
-file once, then go to **System Settings → Privacy & Security → Open Anyway**
+file once, then go to **System Settings â†’ Privacy & Security â†’ Open Anyway**
 (if offered) and confirm. See [Apple's instructions](https://support.apple.com/en-us/102445).
 
 Do not disable Gatekeeper globally. If the message says the file is damaged or
@@ -166,7 +166,7 @@ executables are not included in Companion's ZIP.
 
 ### Where to find your logs
 
-Open your extracted Companion folder in Finder, then open **data → logs**.
+Open your extracted Companion folder in Finder, then open **data â†’ logs**.
 Each setup attempt saves a separate **`setup-<date>-<time>-<id>.log`** file,
 including tool downloads and errors that happen before Python or the web panel
 can start. The same output remains visible in Terminal. The filename uses UTC;

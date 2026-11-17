@@ -23,6 +23,7 @@ for name in ("backend", "docs/assets"):
         if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
             entries[path.relative_to(ROOT).as_posix()] = path
 entries["docs/MACOS.md"] = ROOT / "docs/MACOS.md"
+entries["docs/LIBRARY-PREVIEW.md"] = ROOT / "docs/LIBRARY-PREVIEW.md"
 for path in bundle.rglob("*"):
     if path.is_file():
         entries["plugin/online-source/prebuilt/macos/VDJ Companion Source.bundle/" + path.relative_to(bundle).as_posix()] = path

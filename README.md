@@ -19,9 +19,9 @@
 
 <p align="center">
   <a href="https://github.com/rcsy-px/vdj-stream/releases/latest"><strong>Download for Windows</strong></a>
-  &nbsp; Â· &nbsp; <a href="#get-started">Get started</a>
-  &nbsp; Â· &nbsp; <a href="#troubleshooting">Troubleshooting</a>
-  &nbsp; Â· &nbsp; <a href="https://ko-fi.com/rycsypx">Support the project</a>
+  &nbsp; · &nbsp; <a href="#get-started">Get started</a>
+  &nbsp; · &nbsp; <a href="#troubleshooting">Troubleshooting</a>
+  &nbsp; · &nbsp; <a href="https://ko-fi.com/rycsypx">Support the project</a>
 </p>
 
 VDJ Companion adds a **YouTube source to VirtualDJ's own browser**, with a local
@@ -42,7 +42,7 @@ shows component status, live logs, and available updates.
    Choose `vdj-companion-<version>-windows-x64.zip`, then extract it to a folder you plan to keep.
 2. **Run `START.bat`.** First launch downloads the required tools, installs the
    plugin, and opens the control panel. Allow the setup to finish.
-3. **Restart VirtualDJ**, then select **Online Music â†’ VDJ Companion Source**.
+3. **Restart VirtualDJ**, then select **Online Music → VDJ Companion Source**.
 4. **Search for a track and drag a result onto a deck.**
 
 On later sessions, run `START.bat` before using the source. Keep the backend
@@ -97,8 +97,8 @@ The backend listens only on `127.0.0.1`. No telemetry or separate companion acco
 is required. Search and streaming contact YouTube; update checks contact GitHub.
 Logs and caches stay on your computer.
 
-- **Developers:** [Contributing & builds](CONTRIBUTING.md) Â· [Architecture](docs/architecture.md) Â· [Portable tools](docs/portable-tools.md)
-- **Releases:** [Changelog](CHANGELOG.md) Â· [Verify a download](docs/portable-tools.md#verify-a-release-download)
+- **Developers:** [Contributing & builds](CONTRIBUTING.md) · [Architecture](docs/architecture.md) · [Portable tools](docs/portable-tools.md)
+- **Releases:** [Changelog](CHANGELOG.md) · [Verify a download](docs/portable-tools.md#verify-a-release-download)
 - **Security:** [Report a vulnerability](SECURITY.md)
 - **Support:** [Buy me a coffee on Ko-fi](https://ko-fi.com/rycsypx)
 

@@ -34,7 +34,7 @@ select an existing one. This becomes the active destination for VirtualDJ's
 **Add to active Companion setlist** context-menu action.
 
 Search inside **VDJ Companion Source**, right-click a result and add it. The
-source's subfolders include **Setlist: â€¦** folders containing your saved tracks.
+source's subfolders include **Setlist: …** folders containing your saved tracks.
 Reopen a folder after changes if VirtualDJ still shows the previous contents.
 The same track is added only once per list; audio and video versions are distinct.
 

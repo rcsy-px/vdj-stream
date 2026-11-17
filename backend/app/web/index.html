@@ -8,6 +8,7 @@
   <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/style.css">
   <script defer src="/static/app.js"></script>
+  <script defer src="/static/library.js"></script>
 </head>
 <body>
 <main class="rack">
@@ -47,6 +48,16 @@
     </article>
   </section>
 
+  <section class="module" aria-labelledby="library-title">
+    <div class="section-heading"><h2 id="library-title">LIBRARY &amp; SETLISTS</h2><span class="groove"></span><button id="library-refresh" type="button">Refresh</button></div>
+    <p class="hint">Right-click a track in VirtualDJ to download it or add it to your active setlist. Videos appear in Downloaded videos after preparation finishes. Reopen a VirtualDJ folder to refresh its contents.</p>
+    <div class="library-toolbar"><label for="active-setlist">Active setlist</label><select id="active-setlist"></select><a id="export-setlist" class="button">Export playlist</a><button id="delete-setlist" type="button">Delete setlist</button></div>
+    <form id="new-setlist" class="library-toolbar"><input id="setlist-name" maxlength="80" required placeholder="New setlist name" aria-label="New setlist name"><button type="submit">Create setlist</button></form>
+    <p id="library-message" role="status" aria-live="polite"></p>
+    <details open><summary>Active setlist</summary><div id="setlist-tracks" class="library-list"></div></details>
+    <details open><summary>Downloads <span id="library-storage"></span></summary><p class="hint">One download at a time, up to 20 queued. Limit: 500 MB per file, 5 GB total. Unload a track before removing its saved file.</p><div id="download-tracks" class="library-list"></div></details>
+    <details><summary>Played in VirtualDJ</summary><p class="hint">Read from VirtualDJ History every 30 seconds. Only tracks recorded by VirtualDJ count as played; loading a deck alone does not count.</p><div id="history-tracks" class="library-list"></div></details>
+  </section>
   <section class="module diagnostics-module" aria-labelledby="diagnostics-title">
     <div class="section-heading"><h2 id="diagnostics-title">DIAGNOSTICS</h2><span class="groove"></span><button id="run-diagnostics" class="compact" type="button">Run checks</button></div>
     <p class="hint">Test YouTube search, Chromium fallback and a small audio sample. This can take up to three minutes.</p>

@@ -15,7 +15,7 @@ size_t Append(char* data, size_t size, size_t count, void* context)
 }
 
 std::string VdjCompanionSource::HttpGet(
-    const std::wstring& path, DWORD* statusCode, DWORD* networkError)
+    const std::wstring& path, DWORD* statusCode, DWORD* networkError, const std::string& token)
 {
     *statusCode = 0;
     if (networkError) *networkError = 0;
@@ -32,6 +32,13 @@ std::string VdjCompanionSource::HttpGet(
     curl_easy_setopt(request, CURLOPT_WRITEFUNCTION, Append);
     curl_easy_setopt(request, CURLOPT_WRITEDATA, &body);
     curl_easy_setopt(request, CURLOPT_USERAGENT, "VdjCompanionSource-macOS");
+    curl_slist* headers = curl_slist_append(nullptr, "X-VDJ-Companion: 1");
+    if (!token.empty()) {
+        headers = curl_slist_append(headers, ("X-Shutdown-Token: " + token).c_str());
+        curl_easy_setopt(request, CURLOPT_POST, 1L);
+        curl_easy_setopt(request, CURLOPT_POSTFIELDS, "");
+    }
+    curl_easy_setopt(request, CURLOPT_HTTPHEADER, headers);
     const auto result = curl_easy_perform(request);
     if (result == CURLE_OK) {
         long status = 0;
@@ -42,5 +49,6 @@ std::string VdjCompanionSource::HttpGet(
         if (networkError) *networkError = result == CURLE_OPERATION_TIMEDOUT ? 12002 : 1;
     }
     curl_easy_cleanup(request);
+    curl_slist_free_all(headers);
     return body;
 }

@@ -835,3 +835,13 @@ pre {
     font-size:10px;
   }
 }
+/* Library controls wrap on small screens and never interpolate remote HTML. */
+.library-toolbar,.library-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:10px 0; }
+.library-toolbar input,.library-toolbar select { background:#16191b; color:#e5e5e5; padding:9px; border:1px solid #666; min-width:0; max-width:100%; }
+.library-toolbar input { flex:1; }
+.library-list { max-height:360px; overflow:auto; }
+.library-row { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid #555; }
+.library-row>div { min-width:0; overflow-wrap:anywhere; }
+.library-row .hint { margin:4px 0; }
+.library-actions { margin:0; }
+@media(max-width:600px) { .library-row { flex-direction:column; } }

@@ -70,6 +70,11 @@ HRESULT VDJ_API VdjCompanionSource::OnSearch(
         return E_FAIL;
     }
 
+    return ReadTracks(body, tracksList);
+}
+
+HRESULT VdjCompanionSource::ReadTracks(const std::string& body, IVdjTracksList* tracksList)
+{
     std::stringstream lines(body);
     std::string line;
     while (std::getline(lines, line))
@@ -97,7 +102,7 @@ HRESULT VDJ_API VdjCompanionSource::OnSearch(
             nullptr,
             fields[4].empty() ? nullptr : fields[4].c_str(),
             nullptr,
-            length);
+            length, 0, 0, 0, fields.size() > 5 && fields[5] == "1");
     }
     tracksList->finish();
     return S_OK;
@@ -131,9 +136,53 @@ HRESULT VDJ_API VdjCompanionSource::GetStreamUrl(
     return S_OK;
 }
 
+HRESULT VDJ_API VdjCompanionSource::GetFolderList(IVdjSubfoldersList* folders)
+{
+    DWORD status = 0;
+    const auto body = HttpGet(L"/api/vdj/source/folders", &status);
+    if (status != 200) return E_FAIL;
+    std::stringstream lines(body);
+    std::string line;
+    while (std::getline(lines, line)) {
+        const auto fields = Split(line, '\t');
+        if (fields.size() == 2) folders->add(fields[0].c_str(), fields[1].c_str());
+    }
+    return S_OK;
+}
+
+HRESULT VDJ_API VdjCompanionSource::GetFolder(const char* id, IVdjTracksList* tracks)
+{
+    DWORD status = 0;
+    const auto body = HttpGet(L"/api/vdj/source/folder/" + UrlEncode(id), &status);
+    if (status != 200) { tracks->finish(); return E_FAIL; }
+    return ReadTracks(body, tracks);
+}
+
+HRESULT VDJ_API VdjCompanionSource::GetContextMenu(const char*, IVdjContextMenu* menu)
+{
+    menu->add("Download audio for offline use");
+    menu->add("Download video (720p maximum)");
+    menu->add("Add to active Companion setlist");
+    menu->add("Remove from active Companion setlist");
+    menu->add("Cancel this download");
+    menu->add("Remove this saved download (unload track first)");
+    return S_OK;
+}
+
+HRESULT VDJ_API VdjCompanionSource::OnContextMenu(const char* id, size_t index)
+{
+    static const wchar_t* actions[] = {L"audio", L"video", L"add", L"remove", L"cancel", L"delete"};
+    if (index >= 6) return E_FAIL;
+    DWORD status = 0;
+    const auto token = HttpGet(L"/api/library/native-token", &status);
+    if (status != 200 || token.empty()) return E_FAIL;
+    HttpGet(L"/api/library/tracks/" + UrlEncode(id) + L"/" + actions[index], &status, nullptr, token);
+    return status == 200 ? S_OK : E_FAIL;
+}
+
 #ifdef VDJ_WIN
 std::string VdjCompanionSource::HttpGet(
-    const std::wstring& path, DWORD* statusCode, DWORD* networkError)
+    const std::wstring& path, DWORD* statusCode, DWORD* networkError, const std::string& token)
 {
     std::string body;
     *statusCode = 0;
@@ -154,13 +203,15 @@ std::string VdjCompanionSource::HttpGet(
     HINTERNET connection = WinHttpConnect(session, kHost, kPort, 0);
     HINTERNET request = connection
         ? WinHttpOpenRequest(
-              connection, L"GET", path.c_str(), nullptr, WINHTTP_NO_REFERER,
+              connection, token.empty() ? L"GET" : L"POST", path.c_str(), nullptr, WINHTTP_NO_REFERER,
               WINHTTP_DEFAULT_ACCEPT_TYPES, 0)
         : nullptr;
 
+    std::wstring headers = L"X-VDJ-Companion: 1\r\n";
+    if (!token.empty()) headers += L"X-Shutdown-Token: " + std::wstring(token.begin(), token.end()) + L"\r\n";
     if (request &&
         WinHttpSendRequest(
-            request, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
+            request, headers.c_str(), static_cast<DWORD>(headers.size()),
             WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
         WinHttpReceiveResponse(request, nullptr))
     {

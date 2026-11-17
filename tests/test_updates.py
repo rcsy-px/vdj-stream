@@ -188,6 +188,9 @@ async def test_ytdlp_process_timeout_kills_and_reaps(tmp_path, monkeypatch):
             self.killed = True
 
     process = Process()
+    async def terminate(p):
+        p.kill()
+    monkeypatch.setattr('backend.app.ytdlp_runner.terminate_process_tree', terminate)
 
     async def spawn(*args, **kwargs):
         assert args == (str(executable), "--ignore-config", "--version")

@@ -2,6 +2,9 @@
 
 import asyncio
 import logging
+import os
+import signal
+import subprocess
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -10,6 +13,25 @@ logger = logging.getLogger(__name__)
 
 class YtDlpBusyError(RuntimeError):
     pass
+
+
+async def terminate_process_tree(process):
+    """Also stop FFmpeg children when a download is cancelled or times out."""
+    try:
+        if os.name == 'nt':
+            killer = await asyncio.create_subprocess_exec('taskkill', '/PID', str(process.pid), '/T', '/F',
+                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+            await asyncio.wait_for(killer.wait(), 10)
+        else:
+            os.killpg(process.pid, signal.SIGKILL)
+    except (OSError, TimeoutError):
+        pass
+    finally:
+        if process.returncode is None:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
 
 
 class YtDlpRunner:
@@ -77,13 +99,14 @@ class YtDlpRunner:
         process = await asyncio.create_subprocess_exec(
             str(self.executable), "--ignore-config", *args,
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            **({'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == 'nt' else {'start_new_session': True}),
         )
         try:
             stdout, stderr = await asyncio.wait_for(process.communicate(), timeout)
         except (TimeoutError, asyncio.CancelledError):
             if process.returncode is None:
                 try:
-                    process.kill()
+                    await terminate_process_tree(process)
                 except ProcessLookupError:
                     pass
             await process.communicate()

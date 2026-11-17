@@ -30,6 +30,9 @@ from .update_checker import GitHubReleaseChecker
 from .ytdlp_updates import YtDlpUpdates
 from .macos_releases import MacReleaseChecker
 from .macos_updates import MacAppUpdates
+from .library import Library, track_parts
+from .library_api import routes as library_routes
+from urllib.parse import quote
 
 settings = get_settings()
 settings.prepare_directories()
@@ -61,6 +64,8 @@ update_checker = (MacReleaseChecker if sys.platform == 'darwin' else GitHubRelea
 app_updates = MacAppUpdates(Path(__file__).resolve().parents[2], update_checker)
 ytdlp_updates = YtDlpUpdates(settings.ytdlp_exe, runner=ytdlp_runner)
 diagnostics = Diagnostics(ytdlp_search, browser_search, resolver, ytdlp_updates)
+library = Library(settings.data_dir / 'library', ytdlp_runner, settings.ffmpeg_bin)
+library.initialize()
 
 
 def _error_message(exc: Exception) -> str:
@@ -71,11 +76,14 @@ def _error_message(exc: Exception) -> str:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await cache.initialize()
+    await library.start()
     yield
+    await library.close()
     await browser_search.close()
 
 
 app = FastAPI(title="VirtualDJ YouTube Companion", version=settings.version, lifespan=lifespan)
+app.include_router(library_routes(library, shutdown_token, lambda: app_updates.in_progress))
 LOGO_PATH = settings.data_dir.parent / "docs" / "assets" / "companion-bot.png"
 WEB_ROOT = Path(__file__).parent / "web"
 app.mount("/static", StaticFiles(directory=WEB_ROOT), name="static")
@@ -147,7 +155,7 @@ async def install_app_update(request: Request):
         raise HTTPException(403, 'Updates are only available from the local control panel')
     if not app_updates.supported:
         raise HTTPException(409, 'Start the macOS app with START.command to install updates.')
-    if diagnostics.running or ytdlp_updates._update_lock.locked():
+    if diagnostics.running or ytdlp_updates._update_lock.locked() or library.tasks:
         raise HTTPException(409, 'Wait for diagnostics or the yt-dlp update to finish.')
     try:
         result = await app_updates.prepare()
@@ -172,6 +180,8 @@ async def update_ytdlp(request: Request) -> dict:
         raise HTTPException(403, "Updates are only available from the local control panel")
     if app_updates.in_progress:
         raise HTTPException(409, 'An application update is running.')
+    if library.tasks:
+        raise HTTPException(409, 'Finish or cancel library downloads before updating yt-dlp.')
     try:
         result = await ytdlp_updates.update()
     except RuntimeError as exc:
@@ -206,6 +216,7 @@ def _is_loopback(request: Request) -> bool:
 
 async def _stop_process() -> None:
     await asyncio.sleep(0.25)
+    await library.close()
     callback = getattr(app.state, 'request_shutdown', None)
     if callback:
         callback()
@@ -283,6 +294,7 @@ async def vdj_source_search(
     response = await search(q, limit)
     if response.error:
         return PlainTextResponse("YouTube search failed. Check Live logs in the control panel.", status_code=502)
+    library.remember(response.results)
     rows = []
     for item in response.results:
         fields = (
@@ -298,6 +310,15 @@ async def vdj_source_search(
 
 @app.get("/api/vdj/source/stream/{video_id}", response_class=PlainTextResponse)
 async def vdj_source_stream(video_id: str) -> PlainTextResponse:
+    try:
+        _, video = track_parts(video_id)
+        saved = library.media(video_id)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    if saved:
+        return PlainTextResponse(f'{settings.public_base_url}/stream/library/{quote(video_id)}/{quote(saved.name)}')
+    if video:
+        raise HTTPException(409, 'Download the video first, then load it from Downloaded videos.')
     resolved = await resolve_video(video_id)
     if not resolved.localStreamUrl:
         raise HTTPException(502, "No local stream URL was resolved")

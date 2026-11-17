@@ -74,6 +74,9 @@ async def test_cancelled_process_is_killed_and_reaped(tmp_path, monkeypatch):
         def kill(self):
             self.killed = True
     process = Process()
+    async def terminate(p):
+        p.kill()
+    monkeypatch.setattr('backend.app.ytdlp_runner.terminate_process_tree', terminate)
     async def spawn(*args, **kwargs):
         assert '--ignore-config' in args
         return process

@@ -3,6 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 version=$(cat VERSION | tr -d '\r\n')
 preview=$(cat MACOS_VERSION | tr -d '\r\n')
+version=${preview%%-*}
 bundle="plugin/online-source/build/macos/VDJ Companion Source.bundle"
 mkdir -p "$bundle/Contents/MacOS"
 xcrun clang++ -std=c++17 -O2 -bundle -fvisibility=hidden \

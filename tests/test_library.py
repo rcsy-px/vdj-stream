@@ -36,6 +36,21 @@ def test_setlist_persists_ids_order_and_video_without_duplicates(library):
     assert len(other.tracks('set-' + key)) == 1
 
 
+def test_last_search_survives_folder_changes_and_restart(library):
+    assert library.tracks('last-search') == []
+    items = [SimpleNamespace(videoId=key, title=key, channelName='Artist', durationSeconds=12, thumbnailUrl='cover') for key in [TRACK, '12345678901']]
+    library.remember_search('my query', items)
+    library.tracks('downloads')
+    library.tracks('history')
+    other = Library(library.root, None, library.ffmpeg)
+    other.initialize()
+    assert [t['id'] for t in other.tracks('last-search')] == [TRACK, '12345678901']
+    assert 'last-search' in dict(other.folders())
+    assert TRACK in other.tsv('last-search')
+    other.remember_search('no matches', [])
+    assert other.tracks('last-search') == []
+
+
 def test_history_import_is_read_only_deduplicated_and_provider_specific(library):
     home = library.history_home / 'History'
     home.mkdir(parents=True)

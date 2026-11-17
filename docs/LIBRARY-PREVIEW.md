@@ -19,6 +19,16 @@ The preview uses its own data folder. Do not run two Companion backends on port
 backed-up DLL and start the stable Companion again. Your existing VirtualDJ
 database and History are not modified by the history importer.
 
+## Returning to search results
+
+The **Last search** source folder restores the latest successful search results
+without repeating the online search, even after a backend restart. Switching to
+downloads or setlists does not clear them. A successful search with no matches
+replaces the saved list with an empty list; a failed search leaves it intact.
+The plugin also returns this list when VirtualDJ requests an empty search or the
+root folder. Whether returning to the source root triggers this callback depends
+on VirtualDJ. The search box text itself is controlled by VirtualDJ.
+
 ## Setlists
 
 In the control panel's **Library & Setlists** section, create a named setlist or

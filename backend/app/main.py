@@ -294,7 +294,7 @@ async def vdj_source_search(
     response = await search(q, limit)
     if response.error:
         return PlainTextResponse("YouTube search failed. Check Live logs in the control panel.", status_code=502)
-    library.remember(response.results)
+    library.remember_search(q, response.results)
     rows = []
     for item in response.results:
         fields = (

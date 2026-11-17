@@ -55,6 +55,8 @@ HRESULT VDJ_API VdjCompanionSource::OnGetPluginInfo(TVdjPluginInfo8* info)
 HRESULT VDJ_API VdjCompanionSource::OnSearch(
     const char* search, IVdjTracksList* tracksList)
 {
+    if (!search || std::string(search).find_first_not_of(" \t\r\n") == std::string::npos)
+        return GetFolder("last-search", tracksList);
     DWORD statusCode = 0;
     const std::string body = HttpGet(
         L"/api/vdj/source/search?q=" + UrlEncode(search) + L"&limit=25",
@@ -152,6 +154,7 @@ HRESULT VDJ_API VdjCompanionSource::GetFolderList(IVdjSubfoldersList* folders)
 
 HRESULT VDJ_API VdjCompanionSource::GetFolder(const char* id, IVdjTracksList* tracks)
 {
+    if (!id || !*id) id = "last-search";
     DWORD status = 0;
     const auto body = HttpGet(L"/api/vdj/source/folder/" + UrlEncode(id), &status);
     if (status != 200) { tracks->finish(); return E_FAIL; }

@@ -109,6 +109,12 @@ class Library:
             db.executemany('INSERT OR REPLACE INTO tracks VALUES (?,?,?,?,?)', [
                 (t.videoId, t.title, t.channelName or '', t.durationSeconds or 0, t.thumbnailUrl or '') for t in items])
 
+    def remember_search(self, query, items):
+        self.remember(items)
+        with self.db() as db:
+            db.execute('INSERT OR REPLACE INTO config VALUES (?,?)', ('last_search', json.dumps([t.videoId for t in items])))
+            db.execute('INSERT OR REPLACE INTO config VALUES (?,?)', ('last_query', clean(query)))
+
     def active(self):
         with self.db() as db:
             return db.execute("SELECT value FROM config WHERE key='active'").fetchone()[0]
@@ -152,12 +158,15 @@ class Library:
     def folders(self):
         with self.db() as db:
             lists = db.execute('SELECT * FROM lists ORDER BY name').fetchall()
-        return [('downloads', 'Downloaded audio'), ('videos', 'Downloaded videos'), ('history', 'Played in VirtualDJ')] + [
+        return [('last-search', 'Last search'), ('downloads', 'Downloaded audio'), ('videos', 'Downloaded videos'), ('history', 'Played in VirtualDJ')] + [
             ('set-' + row['id'], 'Setlist: ' + row['name']) for row in lists]
 
     def tracks(self, folder):
         with self.db() as db:
-            if folder in ('downloads', 'videos'):
+            if folder == 'last-search':
+                saved = db.execute("SELECT value FROM config WHERE key='last_search'").fetchone()
+                keys = json.loads(saved[0]) if saved else []
+            elif folder in ('downloads', 'videos'):
                 keys = [r[0] for r in db.execute("SELECT track FROM downloads WHERE state='ready' ORDER BY rowid DESC")
                         if r[0].startswith('video:') == (folder == 'videos') and self.media(r[0])]
             elif folder == 'history':

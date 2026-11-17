@@ -69,13 +69,19 @@ Open **[127.0.0.1:8765](http://127.0.0.1:8765/)** whenever the backend is runnin
 checks periodically. If **Update yt-dlp** appears, click it and wait for completion,
 then reload the track in VirtualDJ. YouTube changes can break an older engine.
 
-**VDJ Companion:** use **View update details on GitHub** when a release is available.
-Stop the backend and close VirtualDJ, extract the new release into a new permanent
-folder, and run its `START.bat`. This installs the bundled plugin; reopen VirtualDJ
-after setup. Before starting the new copy, copy the old `data/library` folder into its `data` folder to preserve setlists and downloaded media. Use the new folder for future launches.
+**VDJ Companion:** when an update is available, close VirtualDJ and click
+**Install update & restart**. Companion verifies the download, backs up the old
+installation and plugin, installs the update, and restarts. Keep the browser tab
+open. Your setlists, downloaded media and settings stay in place. If installation
+or startup fails, the updater restores the previous version.
 
-On Windows, updates are installed manually. On macOS, the panel can install an update and restart Companion after you close VirtualDJ. A skipped application update can be
-restored with **Show skipped update**. If a check fails, use **Check again** to retry.
+Windows versions **0.3.0 and earlier** need one manual upgrade to a version with
+the updater: stop Companion, extract the new ZIP into a permanent folder, copy
+`data/library` from the old folder if needed, then run `START.bat`. Subsequent
+updates can be installed from the panel. See [Windows update details](docs/WINDOWS-UPDATES.md).
+
+Updates require your click; they are not installed silently. A skipped update
+can be restored with **Show skipped update**. Use **Check again** to retry a failed check.
 
 ## Troubleshooting
 

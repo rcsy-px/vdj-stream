@@ -7,6 +7,7 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $Python = Join-Path $Root ".venv\Scripts\python.exe"
 $Url = "http://127.0.0.1:$Port"
+. (Join-Path $PSScriptRoot 'windows\recover-update.ps1')
 
 function Open-ControlPanel {
     if (-not $NoBrowser) {
@@ -35,6 +36,7 @@ $env:PATH = "$(Join-Path $Root 'tools\uv');$(Join-Path $Root 'tools\yt-dlp');$(J
 $env:UV_CACHE_DIR = Join-Path $Root ".cache\uv"
 $env:UV_PYTHON_INSTALL_DIR = Join-Path $Root "tools\python"
 $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $Root "tools\playwright-browsers"
+$env:VDJ_WINDOWS_UPDATER = if ($Port -eq 8765) { '1' } else { '0' }
 
 $stdout = Join-Path $Root "data\logs\backend-stdout.log"
 $stderr = Join-Path $Root "data\logs\backend-stderr.log"

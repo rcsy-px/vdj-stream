@@ -100,6 +100,7 @@ function Copy-CleanTree([string]$SourceRelative, [string]$DestinationRelative) {
 
 Copy-CleanTree "backend" "backend"
 Copy-CleanTree "docs" "docs"
+Copy-CleanTree "scripts/windows" "scripts/windows"
 New-Item -ItemType Directory -Force -Path (Join-Path $Stage "plugin\online-source") | Out-Null
 Copy-Item -Recurse -Force `
     (Join-Path $Root "plugin\online-source\prebuilt") `

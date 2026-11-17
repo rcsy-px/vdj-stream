@@ -5,6 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'windows\recover-update.ps1')
 $Tools = Join-Path $Root "tools"
 $Uv = Join-Path $Tools "uv\uv.exe"
 $VenvPython = Join-Path $Root ".venv\Scripts\python.exe"

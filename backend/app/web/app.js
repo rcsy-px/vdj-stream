@@ -225,7 +225,7 @@ $("install-app-update").addEventListener("click", async () => {
         location.reload(); return;
       }
     }
-    throw new Error("Companion has not reconnected. Check the launcher Terminal and reopen START.command if needed.");
+    throw new Error("Companion has not reconnected. Check the update log and run your START launcher again to recover.");
   } catch (error) {
     $("update-status").textContent = error.message;
     badge("app-badge", "UPDATE FAILED", "error");

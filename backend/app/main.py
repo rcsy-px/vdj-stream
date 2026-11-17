@@ -30,6 +30,7 @@ from .update_checker import GitHubReleaseChecker
 from .ytdlp_updates import YtDlpUpdates
 from .macos_releases import MacReleaseChecker
 from .macos_updates import MacAppUpdates
+from .windows_updates import WindowsAppUpdates
 from .library import Library, track_parts
 from .library_api import routes as library_routes
 from urllib.parse import quote
@@ -61,7 +62,7 @@ update_checker = (MacReleaseChecker if sys.platform == 'darwin' else GitHubRelea
     settings.update_check_cache_ttl_seconds,
     settings.update_check_timeout_seconds,
 )
-app_updates = MacAppUpdates(Path(__file__).resolve().parents[2], update_checker)
+app_updates = (WindowsAppUpdates if sys.platform == 'win32' else MacAppUpdates)(Path(__file__).resolve().parents[2], update_checker)
 ytdlp_updates = YtDlpUpdates(settings.ytdlp_exe, runner=ytdlp_runner)
 diagnostics = Diagnostics(ytdlp_search, browser_search, resolver, ytdlp_updates)
 library = Library(settings.data_dir / 'library', ytdlp_runner, settings.ffmpeg_bin)
@@ -110,9 +111,10 @@ def _health_payload() -> dict:
         "uptimeSeconds": max(0, int(time.time()) - started_at),
         "tools": tools,
     }
-    if sys.platform == 'darwin':
+    if sys.platform in ('darwin', 'win32'):
         try:
-            result['appUpdateResult'] = json.loads((settings.data_dir / 'macos-update-result.json').read_text())
+            platform_name = 'windows' if sys.platform == 'win32' else 'macos'
+            result['appUpdateResult'] = json.loads((settings.data_dir / f'{platform_name}-update-result.json').read_text(encoding='utf-8'))
         except (OSError, ValueError):
             pass
     return result
@@ -144,8 +146,7 @@ async def health() -> dict:
 async def update_status(response: Response, refresh: bool = False) -> dict:
     response.headers["Cache-Control"] = "no-store"
     result = dict(await update_checker.check(force=refresh))
-    if sys.platform == 'darwin':
-        result['canInstall'] = app_updates.supported
+    result['canInstall'] = app_updates.supported and bool(result.get('downloadUrl') and result.get('checksumUrl'))
     return result
 
 
@@ -154,7 +155,7 @@ async def install_app_update(request: Request):
     if not _is_loopback(request) or request.headers.get('x-shutdown-token') != shutdown_token:
         raise HTTPException(403, 'Updates are only available from the local control panel')
     if not app_updates.supported:
-        raise HTTPException(409, 'Start the macOS app with START.command to install updates.')
+        raise HTTPException(409, 'Start Companion with its START launcher to install updates.')
     if diagnostics.running or ytdlp_updates._update_lock.locked() or library.tasks:
         raise HTTPException(409, 'Wait for diagnostics or the yt-dlp update to finish.')
     try:

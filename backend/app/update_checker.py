@@ -117,6 +117,14 @@ class GitHubReleaseChecker:
             ),
             None,
         )
+        selected = next((asset for asset in assets if asset.get('browser_download_url') == download_url), {}) if download_url else {}
+        asset_name = selected.get('name')
+        checksum = next((asset for asset in assets if asset.get('name') == str(asset_name) + '.sha256'), {})
+        checksum_url = checksum.get('browser_download_url')
+        if checksum_url != str(download_url) + '.sha256':
+            checksum_url = None
+        if download_url and download_url != f'{release_prefix}download/v{latest_version}/{asset_name}':
+            download_url, checksum_url = None, None
         return {
             "currentVersion": self.current_version,
             "latestVersion": latest_version or None,
@@ -126,4 +134,7 @@ class GitHubReleaseChecker:
             ),
             "releaseUrl": release_url,
             "downloadUrl": download_url,
+            "checksumUrl": checksum_url,
+            "assetName": asset_name,
+            "assetDigest": selected.get('digest'),
         }

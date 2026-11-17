@@ -1,6 +1,6 @@
 # Windows application updates
 
-The Windows updater is being prepared for 0.3.1. It is not included in the
+The Windows updater is available starting with 0.3.1. It is not included in the
 already published 0.3.0 or 0.2.0 packages. Those need one manual upgrade first.
 
 Start Companion with `START.bat`. When a newer compatible Windows release is

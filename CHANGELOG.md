@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1 - 2026-11-17
+
+- Added Windows application updates from the control panel, including verified downloads, plugin installation and automatic restart.
+- Preserve user data and downloaded media; restore the old application, Python environment and plugin if installation or startup fails.
+- Recover interrupted updates through the START launcher and retain local update logs and backups.
+- Windows 0.3.0 and earlier require one manual installation of 0.3.1 before using the new updater for future releases.
+
 ## 0.3.0 - 2026-11-17
 
 - Added persistent setlists and M3U8 export.

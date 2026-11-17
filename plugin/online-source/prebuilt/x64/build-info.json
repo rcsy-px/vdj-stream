@@ -1,12 +1,12 @@
-﻿{
-    "sources":  {
-                    "plugin/online-source/src/VdjCompanionSource.cpp":  "a335e32b4c3d0c3c4a488700b42c530db4a656fa9ce350657509748348e0c3c1",
-                    "plugin/online-source/src/VdjCompanionSource.h":  "42d76f2886d1566a704da1c390fda08f3fe7f4b631b7fa99813118f7bf171c28",
-                    "plugin/sdk/vdjOnlineSource.h":  "ded958c43de84dbc04bb86e2cd10d7ce27e251b6d03d04c02f77b559af541f6d",
-                    "plugin/sdk/vdjPlugin8.h":  "95b6a10e148ccde71bc1bf254e690c2adab7f71e2efe574ea7311a35b64c6f40",
-                    "plugin/online-source/VdjCompanionSource.vcxproj":  "bc129010b955a164b01862b0ca4c75bf0d47bd03edf1ad5af9493baadd6d4dd7",
-                    "plugin/online-source/src/Main.cpp":  "857cfa7e4ba58f52f1a4e40e09379dbce2890e725dd419592a47aa5c4b5d2513"
-                },
-    "sha256":  "561d3f7a2e67552be3cdf8d2f091036d12d547b72177353caa828ad226d91d18",
-    "version":  "0.3.0.dev1"
+{
+  "version": "0.3.0.dev1",
+  "sha256": "413eea910a934ff2476213fc6ac9956bd991fd4a3469caec4d5a01e1052c78c9",
+  "sources": {
+    "plugin/online-source/src/VdjCompanionSource.cpp": "0de1600ff1f624142ba03cc8c7b32524a99608c34e647f14cc3f0f025f08c0af",
+    "plugin/sdk/vdjPlugin8.h": "95b6a10e148ccde71bc1bf254e690c2adab7f71e2efe574ea7311a35b64c6f40",
+    "plugin/online-source/src/VdjCompanionSource.h": "42d76f2886d1566a704da1c390fda08f3fe7f4b631b7fa99813118f7bf171c28",
+    "plugin/online-source/src/Main.cpp": "857cfa7e4ba58f52f1a4e40e09379dbce2890e725dd419592a47aa5c4b5d2513",
+    "plugin/online-source/VdjCompanionSource.vcxproj": "bc129010b955a164b01862b0ca4c75bf0d47bd03edf1ad5af9493baadd6d4dd7",
+    "plugin/sdk/vdjOnlineSource.h": "ded958c43de84dbc04bb86e2cd10d7ce27e251b6d03d04c02f77b559af541f6d"
+  }
 }

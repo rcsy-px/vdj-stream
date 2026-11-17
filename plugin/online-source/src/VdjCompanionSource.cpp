@@ -160,12 +160,12 @@ HRESULT VDJ_API VdjCompanionSource::GetFolder(const char* id, IVdjTracksList* tr
 
 HRESULT VDJ_API VdjCompanionSource::GetContextMenu(const char*, IVdjContextMenu* menu)
 {
-    menu->add("Download audio for offline use");
-    menu->add("Download video (720p maximum)");
-    menu->add("Add to active Companion setlist");
-    menu->add("Remove from active Companion setlist");
-    menu->add("Cancel this download");
-    menu->add("Remove this saved download (unload track first)");
+    menu->add("Companion: Download audio for offline use");
+    menu->add("Companion: Download video (720p maximum)");
+    menu->add("Companion: Add to active setlist");
+    menu->add("Companion: Remove from active setlist");
+    menu->add("Companion: Cancel this download");
+    menu->add("Companion: Remove saved download (unload track first)");
     return S_OK;
 }
 

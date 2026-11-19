@@ -4,7 +4,7 @@
 
 <h1 align="center">VDJ Companion</h1>
 
-> **New in 0.3.0:** setlists, offline audio, prepared videos and remembered searches.
+> **New in 0.3.2:** download storage usage, a button to open your downloads folder, and no library or per-file size cap.
 > [Library guide](docs/LIBRARY-PREVIEW.md) · [macOS public beta](docs/MACOS.md)
 
 <p align="center">

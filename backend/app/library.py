@@ -9,6 +9,8 @@ from pathlib import Path
 import re
 import shutil
 import sqlite3
+import subprocess
+import sys
 import time
 import uuid
 import xml.etree.ElementTree as ET
@@ -54,9 +56,8 @@ def vdj_home():
 
 
 class Library:
-    def __init__(self, root, runner, ffmpeg, quota_bytes=5 * 1024**3, history_home=None):
+    def __init__(self, root, runner, ffmpeg, history_home=None):
         self.root, self.runner, self.ffmpeg = Path(root), runner, Path(ffmpeg)
-        self.quota_bytes = quota_bytes
         self.history_home = history_home
         self.tasks = {}
         self.semaphore = asyncio.Semaphore(1)
@@ -259,7 +260,31 @@ class Library:
                     job['state'] = 'missing'
         return {'lists': lists, 'active': self.active(), 'downloads': jobs,
                 'usedBytes': sum(p.stat().st_size for p in (self.root / 'media').iterdir() if p.is_file()),
-                'quotaBytes': self.quota_bytes, 'history': self.tracks('history')}
+                'quotaBytes': None, 'freeBytes': shutil.disk_usage(self.root).free,
+                'history': self.tracks('history')}
+
+    def open_download_folder(self):
+        folder = (self.root / 'media').resolve()
+        folder.mkdir(parents=True, exist_ok=True)
+        if sys.platform == 'win32':
+            os.startfile(str(folder))
+        elif sys.platform == 'darwin':
+            subprocess.run(['open', str(folder)], check=True, timeout=10, capture_output=True)
+        else:
+            raise RuntimeError('Opening the download folder is supported on Windows and macOS.')
+
+    async def run_download(self, *args):
+        task = asyncio.create_task(self.runner.run(*args, timeout=900))
+        try:
+            while not task.done():
+                await asyncio.wait({task}, timeout=1)
+                if shutil.disk_usage(self.root).free < 2 * 1024**3:
+                    raise ValueError('Download stopped: less than 2 GB of free disk space remains.')
+            return await task
+        finally:
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
 
     def enqueue(self, track):
         track_parts(track)
@@ -280,25 +305,23 @@ class Library:
         stage = self.root / 'staging' / uuid.uuid4().hex
         try:
             async with self.semaphore:
-                if self.state()['usedBytes'] + 500 * 1024**2 > self.quota_bytes:
-                    raise ValueError('Library storage limit reached. Remove a saved download first.')
                 if shutil.disk_usage(self.root).free < 2 * 1024**3:
                     raise ValueError('At least 2 GB of free disk space is required.')
                 stage.mkdir()
                 self.mark(track, 'downloading')
                 fmt = ('bestvideo[height<=720][ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/best[height<=720][ext=mp4][vcodec^=avc1]'
                        if video else 'bestaudio[ext=m4a]/bestaudio')
-                args = ['--no-playlist', '--no-progress', '--no-warnings', '--max-filesize', '500M',
+                args = ['--no-playlist', '--no-progress', '--no-warnings',
                         '--socket-timeout', '20', '--retries', '2', '--fragment-retries', '2',
                         '--ffmpeg-location', str(self.ffmpeg), '-f', fmt,
                         '-o', str(stage / 'media.%(ext)s'), '--print', 'after_move:%(filepath)s',
                         '--no-simulate']
                 if video:
                     args += ['--merge-output-format', 'mp4']
-                await self.runner.run(*args, f'https://www.youtube.com/watch?v={video_id}', timeout=900)
+                await self.run_download(*args, f'https://www.youtube.com/watch?v={video_id}')
                 files = [p for p in stage.glob('media.*') if p.suffix in ('.mp4', '.m4a', '.webm', '.opus', '.ogg')]
-                if len(files) != 1 or not 0 < files[0].stat().st_size <= 500 * 1024**2:
-                    raise ValueError('Download did not produce a complete supported file under 500 MB.')
+                if len(files) != 1 or files[0].stat().st_size <= 0:
+                    raise ValueError('Download did not produce a complete supported file.')
                 source = files[0]
                 # Verify tracks, not merely extension: a partial/video-only file is not playable.
                 executable = self.ffmpeg / ('ffprobe.exe' if os.name == 'nt' else 'ffprobe')

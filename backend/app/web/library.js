@@ -3,6 +3,12 @@
   const el = id => document.getElementById(id);
   const token = document.querySelector('meta[name="control-token"]').content;
   let busy = false;
+  function formatBytes(bytes) {
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let value = Math.max(0, bytes || 0), unit = 0;
+    while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit++; }
+    return `${value.toLocaleString(undefined, {maximumFractionDigits: unit ? 2 : 0})} ${units[unit]}`;
+  }
   async function request(url, body) {
     const response = await fetch(url, {cache: "no-store", ...(body !== undefined ? {
       method: "POST", headers: {"X-Shutdown-Token": token, "Content-Type": "application/json"}, body: JSON.stringify(body)
@@ -41,7 +47,8 @@
     el("active-setlist").value = state.active;
     el("delete-setlist").disabled = state.active === "default";
     el("export-setlist").href = `/api/library/setlists/${state.active}/export`;
-    el("library-storage").textContent = `— ${(state.usedBytes / 1024 ** 3).toFixed(2)} / ${(state.quotaBytes / 1024 ** 3).toFixed(0)} GB`;
+    el("library-storage").textContent = `${formatBytes(state.usedBytes)} used`;
+    el("library-free-space").textContent = `Unlimited storage · ${formatBytes(state.freeBytes)} free on disk`;
     const tracks = await request(`/api/library/folders/set-${state.active}`);
     fill("setlist-tracks", tracks.map(t => row(t.title, `${t.artist}${t.video ? " · Video" : ""}`, [
       button("Download audio", () => trackAction(t.id, "audio")), button("Download video", () => trackAction(t.id, "video")),
@@ -66,6 +73,15 @@
     event.preventDefault(); perform(async () => { await request("/api/library/setlists", {name: el("setlist-name").value}); el("setlist-name").value = ""; });
   });
   el("library-refresh").addEventListener("click", () => perform(() => request("/api/library/history/refresh", {})));
+  el("open-download-folder").addEventListener("click", async () => {
+    const opener = el("open-download-folder");
+    opener.disabled = true;
+    try {
+      await request("/api/library/open-download-folder", {});
+      el("library-message").textContent = "Download folder opened on this computer.";
+    } catch (error) { el("library-message").textContent = error.message; }
+    finally { opener.disabled = false; }
+  });
   refresh().catch(error => { el("library-message").textContent = error.message; });
   setInterval(() => { if (!busy && !document.hidden && !el("active-setlist").matches(":focus")) refresh().catch(() => {}); }, 5000);
 })();

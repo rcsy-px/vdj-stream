@@ -55,7 +55,11 @@
     <form id="new-setlist" class="library-toolbar"><input id="setlist-name" maxlength="80" required placeholder="New setlist name" aria-label="New setlist name"><button type="submit">Create setlist</button></form>
     <p id="library-message" role="status" aria-live="polite"></p>
     <details open><summary>Active setlist</summary><div id="setlist-tracks" class="library-list"></div></details>
-    <details open><summary>Downloads <span id="library-storage"></span></summary><p class="hint">One download at a time, up to 20 queued. Limit: 500 MB per file, 5 GB total. Unload a track before removing its saved file.</p><div id="download-tracks" class="library-list"></div></details>
+    <div class="library-storage-panel">
+      <div><span class="hint">Download storage</span><strong id="library-storage" aria-live="polite">Checking storage…</strong><span class="hint" id="library-free-space">No download size limit</span></div>
+      <button type="button" id="open-download-folder">Open download folder</button>
+    </div>
+    <details open><summary>Downloads</summary><p class="hint">No library or per-file size limit. Downloads stop at low disk space (2 GB reserve); free up space and retry. One download at a time, up to 20 queued. Unload a track before removing its saved file.</p><div id="download-tracks" class="library-list"></div></details>
     <details><summary>Played in VirtualDJ</summary><p class="hint">Read from VirtualDJ History every 30 seconds. Only tracks recorded by VirtualDJ count as played; loading a deck alone does not count.</p><div id="history-tracks" class="library-list"></div></details>
   </section>
   <section class="module diagnostics-module" aria-labelledby="diagnostics-title">

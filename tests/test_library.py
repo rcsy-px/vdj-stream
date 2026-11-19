@@ -131,18 +131,51 @@ async def test_cancellation_leaves_no_partial_download_or_stuck_queue(library):
     assert library.state()['downloads'][0]['state'] == 'cancelled'
 
 
-async def test_quota_failure_does_not_start_network_download(library):
-    library.quota_bytes = 100
+async def test_low_disk_space_does_not_start_network_download(library, monkeypatch):
+    monkeypatch.setattr('backend.app.library.shutil.disk_usage', lambda _: SimpleNamespace(free=1024**3))
     library.enqueue(TRACK)
     await asyncio.gather(*library.tasks.values())
     job = library.state()['downloads'][0]
-    assert job['state'] == 'failed' and 'storage limit' in job['error']
+    assert job['state'] == 'failed' and 'free disk space' in job['error']
+
+
+async def test_disk_reserve_cancels_active_download(library, monkeypatch):
+    cancelled = asyncio.Event()
+    class Runner:
+        async def run(self, *args, **kwargs):
+            try:
+                await asyncio.Event().wait()
+            finally:
+                cancelled.set()
+    library.runner = Runner()
+    monkeypatch.setattr('backend.app.library.shutil.disk_usage', lambda _: SimpleNamespace(free=1024**3))
+    with pytest.raises(ValueError, match='free disk space'):
+        await library.run_download('fixture')
+    assert cancelled.is_set()
+
+
+def test_storage_and_authenticated_folder_open(library, monkeypatch):
+    file = library.root / 'media/saved.m4a'
+    file.write_bytes(b'1234567890')
+    assert library.state()['usedBytes'] == 10
+    assert library.state()['quotaBytes'] is None
+    assert library.state()['freeBytes'] > 0
+    opened = []
+    monkeypatch.setattr(library, 'open_download_folder', lambda: opened.append(True))
+    app = FastAPI()
+    app.include_router(routes(library, 'secret'))
+    with TestClient(app) as client:
+        assert client.post('/api/library/open-download-folder').status_code == 403
+        assert not opened
+        assert client.post('/api/library/open-download-folder', headers={'X-Shutdown-Token': 'secret'}).status_code == 200
+        assert opened == [True]
 
 
 @pytest.mark.parametrize('video,streams,expected', [(False, ['audio'], 'ready'), (True, ['audio','video'], 'ready'), (True, ['video'], 'failed')])
 async def test_download_validates_streams_before_exposing_media(library, monkeypatch, video, streams, expected):
     class Runner:
         async def run(self, *args, **kwargs):
+            assert '--max-filesize' not in args
             output = Path(args[args.index('-o') + 1].replace('%(ext)s', 'mp4' if video else 'm4a'))
             output.write_bytes(b'valid fixture')
     class Probe:

@@ -68,9 +68,11 @@ require YouTube. Files are kept in `data/library/media`; the library index and
 setlists live in `data/library/library.sqlite3`. Keep this folder when backing up
 your library. Runtime logs are under `data/logs`.
 
-One download runs at a time, with up to 20 queued, a 500 MB limit per completed
-file and a 5 GB library limit. At least 2 GB of free disk space is required
-before starting a download. The panel supports cancel, retry and remove. Unload
+One download runs at a time, with up to 20 queued and no library or per-file size
+limit. The panel shows saved download size and free disk space; **Open download
+folder** opens the media folder in Explorer or Finder. At least 2 GB of free disk
+space is required. Downloads stop if free space drops below that reserve; free up
+space and retry. The panel supports cancel, retry and remove. Unload
 a track from VirtualDJ before removing its saved file. Interrupted downloads are
 marked for retry on restart; partial files are never offered as ready media.
 

@@ -1,3 +1,6 @@
+import asyncio
+import subprocess
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
 from pydantic import BaseModel, Field
@@ -28,6 +31,15 @@ def routes(library, token, app_busy=lambda: False):
     @router.get('/api/library')
     async def state():
         return library.state()
+
+    @router.post('/api/library/open-download-folder')
+    async def open_download_folder(request: Request):
+        authorize(request)
+        try:
+            await asyncio.to_thread(library.open_download_folder)
+        except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+            raise HTTPException(503, 'Could not open the download folder. Try again from the computer running Companion.') from exc
+        return {'ok': True}
 
     @router.post('/api/library/setlists')
     async def create(request: Request, body: ListName):

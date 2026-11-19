@@ -836,6 +836,10 @@ pre {
   }
 }
 /* Library controls wrap on small screens and never interpolate remote HTML. */
+.library-storage-panel { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:14px; margin:14px 0; border:1px solid #666; background:#191d20; box-shadow:inset 0 1px 3px #0008; }
+.library-storage-panel>div { display:grid; gap:5px; min-width:0; }
+.library-storage-panel strong { font-size:22px; color:#e9ad32; font-variant-numeric:tabular-nums; }
+.library-storage-panel .hint { margin:0; }
 .library-toolbar,.library-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:10px 0; }
 .library-toolbar input,.library-toolbar select { background:#16191b; color:#e5e5e5; padding:9px; border:1px solid #666; min-width:0; max-width:100%; }
 .library-toolbar input { flex:1; }

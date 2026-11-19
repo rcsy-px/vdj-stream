@@ -3,6 +3,7 @@ name: macOS preview
 on:
   push:
     branches: [feature/macos]
+    tags: ["macos-v*"]
   workflow_dispatch:
 
 permissions:
@@ -53,3 +54,25 @@ jobs:
             dist/*-macos-universal.zip
             dist/*-macos-universal.zip.sha256
           if-no-files-found: error
+  publish:
+    if: startsWith(github.ref, 'refs/tags/macos-v')
+    needs: [windows-regression, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-preview-tested-on-macos-15
+          path: dist
+      - name: Publish tested macOS beta
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(tr -d '\r\n' < MACOS_VERSION)
+          test "$GITHUB_REF_NAME" = "macos-v$version"
+          cd dist
+          sha256sum --check *.sha256
+          cd ..
+          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/*.sha256 --verify-tag --prerelease --latest=false --title "VDJ Companion for macOS $version" --notes-file "docs/releases/macos-$version.md"

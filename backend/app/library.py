@@ -37,7 +37,7 @@ def track_parts(track):
 
 
 def clean(value):
-    return str(value or '').replace('\t', ' ').replace('\r', ' ').replace('\n', ' ')
+    return str('' if value is None else value).replace('\t', ' ').replace('\r', ' ').replace('\n', ' ')
 
 
 def vdj_home():
@@ -162,11 +162,24 @@ class Library:
         return [('last-search', 'Last search'), ('downloads', 'Downloaded audio'), ('videos', 'Downloaded videos'), ('history', 'Played in VirtualDJ')] + [
             ('set-' + row['id'], 'Setlist: ' + row['name']) for row in lists]
 
+    def playback_mode(self):
+        with self.db() as db:
+            row = db.execute("SELECT value FROM config WHERE key='playback_mode'").fetchone()
+        return row[0] if row else 'audio'
+
+    def set_playback_mode(self, mode):
+        if mode not in ('audio', 'video'):
+            raise ValueError('Choose audio or video.')
+        with self.db() as db:
+            db.execute('INSERT OR REPLACE INTO config VALUES (?,?)', ('playback_mode', mode))
+
     def tracks(self, folder):
         with self.db() as db:
             if folder == 'last-search':
                 saved = db.execute("SELECT value FROM config WHERE key='last_search'").fetchone()
                 keys = json.loads(saved[0]) if saved else []
+                if self.playback_mode() == 'video':
+                    keys = ['video:' + track_parts(key)[0] for key in keys]
             elif folder in ('downloads', 'videos'):
                 keys = [r[0] for r in db.execute("SELECT track FROM downloads WHERE state='ready' ORDER BY rowid DESC")
                         if r[0].startswith('video:') == (folder == 'videos') and self.media(r[0])]
@@ -261,6 +274,7 @@ class Library:
         return {'lists': lists, 'active': self.active(), 'downloads': jobs,
                 'usedBytes': sum(p.stat().st_size for p in (self.root / 'media').iterdir() if p.is_file()),
                 'quotaBytes': None, 'freeBytes': shutil.disk_usage(self.root).free,
+                'playbackMode': self.playback_mode(),
                 'history': self.tracks('history')}
 
     def open_download_folder(self):
@@ -295,6 +309,23 @@ class Library:
         with self.db() as db:
             db.execute("INSERT OR REPLACE INTO downloads(track,state,error) VALUES (?,'queued','')", (track,))
         self.tasks[track] = asyncio.create_task(self._download(track))
+
+    async def prepare_video(self, track, timeout=50):
+        if not track_parts(track)[1]:
+            raise ValueError('A video track is required.')
+        if self.media(track):
+            return self.media(track)
+        self.enqueue(track)
+        task = self.tasks.get(track)
+        if task:
+            # A deck timeout/disconnect must not cancel the shared download.
+            done, _ = await asyncio.wait({task}, timeout=timeout)
+            if not done:
+                raise TimeoutError('Video is still downloading. Retry loading it when the download finishes.')
+        path = self.media(track)
+        if not path:
+            raise RuntimeError('Video preparation failed or was cancelled. Check Downloads in Companion and retry.')
+        return path
 
     def mark(self, track, state, error=''):
         with self.db() as db:

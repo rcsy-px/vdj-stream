@@ -296,17 +296,7 @@ async def vdj_source_search(
     if response.error:
         return PlainTextResponse("YouTube search failed. Check Live logs in the control panel.", status_code=502)
     library.remember_search(q, response.results)
-    rows = []
-    for item in response.results:
-        fields = (
-            item.videoId,
-            item.title,
-            item.channelName or "",
-            str(item.durationSeconds or 0),
-            item.thumbnailUrl or "",
-        )
-        rows.append("\t".join(field.replace("\t", " ").replace("\r", " ").replace("\n", " ") for field in fields))
-    return PlainTextResponse("\n".join(rows))
+    return PlainTextResponse(library.tsv('last-search'))
 
 
 @app.get("/api/vdj/source/stream/{video_id}", response_class=PlainTextResponse)
@@ -316,10 +306,17 @@ async def vdj_source_stream(video_id: str) -> PlainTextResponse:
         saved = library.media(video_id)
     except ValueError as exc:
         raise HTTPException(400, str(exc))
+    if video and not saved:
+        try:
+            saved = await library.prepare_video(video_id)
+        except TimeoutError as exc:
+            raise HTTPException(409, str(exc))
+        except ValueError as exc:
+            raise HTTPException(503, str(exc))
+        except RuntimeError as exc:
+            raise HTTPException(502, str(exc))
     if saved:
         return PlainTextResponse(f'{settings.public_base_url}/stream/library/{quote(video_id)}/{quote(saved.name)}')
-    if video:
-        raise HTTPException(409, 'Download the video first, then load it from Downloaded videos.')
     resolved = await resolve_video(video_id)
     if not resolved.localStreamUrl:
         raise HTTPException(502, "No local stream URL was resolved")

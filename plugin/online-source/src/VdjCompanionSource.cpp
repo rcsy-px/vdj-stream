@@ -122,6 +122,8 @@ HRESULT VDJ_API VdjCompanionSource::GetStreamUrl(
     {
         if (networkError == ERROR_WINHTTP_TIMEOUT || statusCode == 504)
             errorMessage = "Track loading timed out. Check your connection and try again.";
+        else if (statusCode == 409)
+            errorMessage = "Video is still downloading. Check Downloads in Companion, then load the track again when ready.";
         else if (statusCode == 503)
             errorMessage = "YouTube engine is busy or updating. Try again in a moment.";
         else if (statusCode == 0)

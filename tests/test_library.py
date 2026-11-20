@@ -51,6 +51,96 @@ def test_last_search_survives_folder_changes_and_restart(library):
     assert other.tracks('last-search') == []
 
 
+def test_playback_preference_persists_and_only_changes_search(library):
+    library.remember_search('query', [SimpleNamespace(videoId=TRACK, title='Title', channelName='', durationSeconds=12, thumbnailUrl='')])
+    library.add(TRACK)
+    assert library.playback_mode() == 'audio'
+    library.set_playback_mode('video')
+    other = Library(library.root, None, library.ffmpeg)
+    other.initialize()
+    assert other.state()['playbackMode'] == 'video'
+    assert other.tsv('last-search').startswith('video:' + TRACK + '\t')
+    assert other.tsv('last-search').endswith('\t1')
+    assert other.tracks('set-default')[0]['id'] == TRACK
+    other.set_playback_mode('audio')
+    assert other.tsv('last-search').startswith(TRACK + '\t')
+    assert other.tsv('last-search').endswith('\t0')
+
+
+def test_playback_setting_requires_token_and_valid_mode(library):
+    app = FastAPI()
+    app.include_router(routes(library, 'secret'))
+    with TestClient(app) as client:
+        assert client.post('/api/library/playback', json={'mode': 'video'}).status_code == 403
+        headers = {'X-Shutdown-Token': 'secret'}
+        assert client.post('/api/library/playback', headers=headers, json={'mode': 'invalid'}).status_code == 422
+        assert library.playback_mode() == 'audio'
+        assert client.post('/api/library/playback', headers=headers, json={'mode': 'video'}).status_code == 200
+        assert client.get('/api/library').json()['playbackMode'] == 'video'
+
+
+async def test_video_load_waits_for_shared_download_and_reuses_file(library, monkeypatch):
+    track = 'video:' + TRACK
+    release = asyncio.Event()
+    calls = []
+    async def download(key):
+        calls.append(key)
+        await release.wait()
+        (library.root / 'media/video.mp4').write_bytes(b'fixture')
+        with library.db() as db:
+            db.execute("UPDATE downloads SET state='ready',filename='video.mp4' WHERE track=?", (key,))
+        library.tasks.pop(key, None)
+    monkeypatch.setattr(library, '_download', download)
+    with pytest.raises(TimeoutError):
+        await library.prepare_video(track, timeout=0.01)
+    assert not library.tasks[track].done()
+    waiting = asyncio.create_task(library.prepare_video(track))
+    await asyncio.sleep(0)
+    waiting.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await waiting
+    assert not library.tasks[track].cancelled()
+    release.set()
+    path = await library.prepare_video(track)
+    assert path.read_bytes() == b'fixture'
+    assert await library.prepare_video(track) == path
+    assert calls == [track]
+
+
+async def test_failed_video_preparation_does_not_return_audio(library, monkeypatch):
+    async def fail(track):
+        library.mark(track, 'failed', 'fixture failure')
+        library.tasks.pop(track, None)
+    monkeypatch.setattr(library, '_download', fail)
+    with pytest.raises(RuntimeError, match='preparation failed'):
+        await library.prepare_video('video:' + TRACK)
+
+
+async def test_native_search_and_video_stream_use_preference(library, monkeypatch):
+    from backend.app import main
+    monkeypatch.setattr(main, 'library', library)
+    async def search(*args):
+        return SimpleNamespace(error=None, results=[SimpleNamespace(videoId=TRACK, title='Title', channelName='Artist', durationSeconds=12, thumbnailUrl='')])
+    monkeypatch.setattr(main, 'search', search)
+    library.set_playback_mode('video')
+    result = await main.vdj_source_search('test', 25)
+    assert result.body.decode().split('\t')[0] == 'video:' + TRACK
+    assert result.body.decode().endswith('\t1')
+    async def prepare(track):
+        assert track == 'video:' + TRACK
+        return library.root / 'media/video.mp4'
+    monkeypatch.setattr(library, 'prepare_video', prepare)
+    result = await main.vdj_source_stream('video:' + TRACK)
+    assert '/stream/library/video%3A' + TRACK + '/video.mp4' in result.body.decode()
+    async def pending(track):
+        raise TimeoutError('Still downloading')
+    monkeypatch.setattr(library, 'prepare_video', pending)
+    from fastapi import HTTPException
+    with pytest.raises(HTTPException) as error:
+        await main.vdj_source_stream('video:' + TRACK)
+    assert error.value.status_code == 409
+
+
 def test_history_import_is_read_only_deduplicated_and_provider_specific(library):
     home = library.history_home / 'History'
     home.mkdir(parents=True)

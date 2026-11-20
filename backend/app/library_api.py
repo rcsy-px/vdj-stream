@@ -1,5 +1,6 @@
 import asyncio
 import subprocess
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
@@ -9,6 +10,10 @@ from .library import track_parts, clean
 
 class ListName(BaseModel):
     name: str = Field(min_length=1, max_length=80)
+
+
+class PlaybackSettings(BaseModel):
+    mode: Literal['audio', 'video']
 
 
 def routes(library, token, app_busy=lambda: False):
@@ -31,6 +36,12 @@ def routes(library, token, app_busy=lambda: False):
     @router.get('/api/library')
     async def state():
         return library.state()
+
+    @router.post('/api/library/playback')
+    async def playback(request: Request, body: PlaybackSettings):
+        authorize(request)
+        library.set_playback_mode(body.mode)
+        return {'ok': True}
 
     @router.post('/api/library/open-download-folder')
     async def open_download_folder(request: Request):

@@ -41,6 +41,7 @@
   }
   async function refresh() {
     const state = await request("/api/library");
+    if (!el("playback-mode").disabled && !el("playback-mode").matches(":focus")) el("playback-mode").value = state.playbackMode;
     el("active-setlist").replaceChildren(...state.lists.map(list => {
       const option = document.createElement("option"); option.value = list.id; option.textContent = list.name; return option;
     }));
@@ -66,6 +67,17 @@
     fill("history-tracks", state.history.map(t => row(t.title, t.artist, [button("Add to setlist", () => trackAction(t.id, "add"))])));
   }
   el("active-setlist").addEventListener("change", () => perform(() => request(`/api/library/setlists/${el("active-setlist").value}/activate`, {})));
+  el("playback-mode").addEventListener("change", async () => {
+    const select = el("playback-mode");
+    select.disabled = true;
+    try {
+      await request("/api/library/playback", {mode: select.value});
+      el("library-message").textContent = "Playback preference saved. Search again or reopen Last search in VirtualDJ.";
+    } catch (error) {
+      el("library-message").textContent = error.message;
+      try { select.value = (await request("/api/library")).playbackMode; } catch (_) { /* Keep the error visible if offline. */ }
+    } finally { select.disabled = false; }
+  });
   el("delete-setlist").addEventListener("click", () => {
     if (confirm("Delete this setlist? Downloaded files will be kept.")) perform(() => request(`/api/library/setlists/${el("active-setlist").value}/delete`, {}));
   });

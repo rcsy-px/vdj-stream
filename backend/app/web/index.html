@@ -51,6 +51,8 @@
   <section class="module" aria-labelledby="library-title">
     <div class="section-heading"><h2 id="library-title">LIBRARY &amp; SETLISTS</h2><span class="groove"></span><button id="library-refresh" type="button">Refresh</button></div>
     <p class="hint">Right-click a track in VirtualDJ to download it or add it to your active setlist. Videos appear in Downloaded videos after preparation finishes. Reopen a VirtualDJ folder to refresh its contents.</p>
+    <div class="library-toolbar"><label for="playback-mode">Load search results as</label><select id="playback-mode" aria-describedby="playback-hint"><option value="audio">Audio</option><option value="video">Video (up to 720p)</option></select></div>
+    <p class="hint" id="playback-hint">Applies to new searches and Last search in VirtualDJ. Reopen Last search after changing this. Video downloads automatically when loaded onto a deck and is kept for reuse. First load can take longer; if still downloading, retry when ready. Saved audio, setlists and history keep their existing type.</p>
     <div class="library-toolbar"><label for="active-setlist">Active setlist</label><select id="active-setlist"></select><a id="export-setlist" class="button">Export playlist</a><button id="delete-setlist" type="button">Delete setlist</button></div>
     <form id="new-setlist" class="library-toolbar"><input id="setlist-name" maxlength="80" required placeholder="New setlist name" aria-label="New setlist name"><button type="submit">Create setlist</button></form>
     <p id="library-message" role="status" aria-live="polite"></p>

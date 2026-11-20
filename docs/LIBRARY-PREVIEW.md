@@ -104,3 +104,17 @@ the complete file before use; it does not promise immediate live video streaming
 Automated checks cover persistence, history parsing, authorization, cancellation,
 file ranges, storage limits, stream validation, the web panel and the Windows
 native DLL interface. Actual VirtualDJ deck behavior remains a manual test.
+
+## Default search playback (Windows 0.3.3 / macOS 0.3.3 beta 1)
+
+In **Library & Setlists**, choose **Load search results as → Audio / Video**.
+The preference is saved across restarts and applies on Windows and macOS.
+Search again or reopen **Last search** in VirtualDJ after changing it; existing
+deck loads, saved audio, setlists and history retain their track type.
+
+In video mode, loading a search result automatically downloads and prepares an
+MP4 video with audio, up to 720p. The file is saved for reuse and appears under
+**Downloaded videos**. It is not an instant video stream: if preparation takes
+longer than 50 seconds, VirtualDJ asks you to retry after the download completes.
+The download continues in the background; progress and errors appear in Companion.
+No audio-only fallback is substituted for a failed video download.

@@ -51,6 +51,8 @@
   <section class="module" aria-labelledby="library-title">
     <div class="section-heading"><h2 id="library-title">LIBRARY &amp; SETLISTS</h2><span class="groove"></span><button id="library-refresh" type="button">Refresh</button></div>
     <p class="hint">Right-click a track in VirtualDJ to download it or add it to your active setlist. Videos appear in Downloaded videos after preparation finishes. Reopen a VirtualDJ folder to refresh its contents.</p>
+    <div class="library-toolbar"><label for="search-source">Search source</label><select id="search-source" aria-describedby="search-source-hint"><option value="youtube">YouTube</option><option value="music_songs">YouTube Music · Songs</option><option value="music_videos">YouTube Music · Videos</option></select></div>
+    <p class="hint" id="search-source-hint">Choose Songs for the music catalogue or Videos for music videos. Search again in VirtualDJ after changing this. Songs may have a still cover instead of a music video.</p>
     <div class="library-toolbar"><label for="playback-mode">Load search results as</label><select id="playback-mode" aria-describedby="playback-hint"><option value="audio">Audio</option><option value="video">Video (up to 720p)</option></select></div>
     <p class="hint" id="playback-hint">Applies to new searches and Last search in VirtualDJ. Reopen Last search after changing this. Video downloads automatically when loaded onto a deck and is kept for reuse. First load can take longer; if still downloading, retry when ready. Saved audio, setlists and history keep their existing type.</p>
     <div class="library-toolbar"><label for="active-setlist">Active setlist</label><select id="active-setlist"></select><a id="export-setlist" class="button">Export playlist</a><button id="delete-setlist" type="button">Delete setlist</button></div>
@@ -61,7 +63,10 @@
       <div><span class="hint">Download storage</span><strong id="library-storage" aria-live="polite">Checking storage…</strong><span class="hint" id="library-free-space">No download size limit</span></div>
       <button type="button" id="open-download-folder">Open download folder</button>
     </div>
-    <details open><summary>Downloads</summary><p class="hint">No library or per-file size limit. Downloads stop at low disk space (2 GB reserve); free up space and retry. One download at a time, up to 20 queued. Unload a track before removing its saved file.</p><div id="download-tracks" class="library-list"></div></details>
+    <details open><summary>Downloads</summary>
+      <div class="library-toolbar"><label for="filename-mode">Save new files using</label><select id="filename-mode" aria-describedby="filename-hint"><option value="id">Video ID</option><option value="title">Track title + ID</option></select></div>
+      <p class="hint" id="filename-hint">Applies to new downloads only. Existing files keep their names. A unique ID keeps tracks with the same title separate.</p>
+      <p class="hint">No library or per-file size limit. Downloads stop at low disk space (2 GB reserve); free up space and retry. One download at a time, up to 20 queued. Unload a track before removing its saved file.</p><div id="download-tracks" class="library-list"></div></details>
     <details><summary>Played in VirtualDJ</summary><p class="hint">Read from VirtualDJ History every 30 seconds. Only tracks recorded by VirtualDJ count as played; loading a deck alone does not count.</p><div id="history-tracks" class="library-list"></div></details>
   </section>
   <section class="module diagnostics-module" aria-labelledby="diagnostics-title">

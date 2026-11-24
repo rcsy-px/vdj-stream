@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 - 2026-11-24
+
+- Add a persistent Search source selector: YouTube, YouTube Music Songs, or YouTube Music Videos, with artist, duration and cover metadata.
+- Keep search caches separate by source; Music searches never silently fall back to ordinary YouTube results.
+- Recover valid saved audio/video before downloading again when its library record is missing or stale.
+- Add an optional **Track title + ID** filename setting for new downloads on Windows and macOS; existing filenames stay unchanged.
+- Includes macOS 0.4.0 beta 1 for Intel and Apple Silicon.
+
 ## 0.3.1 - 2026-11-17
 
 - Added Windows application updates from the control panel, including verified downloads, plugin installation and automatic restart.

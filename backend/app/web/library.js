@@ -42,6 +42,8 @@
   async function refresh() {
     const state = await request("/api/library");
     if (!el("playback-mode").disabled && !el("playback-mode").matches(":focus")) el("playback-mode").value = state.playbackMode;
+    if (!el("filename-mode").disabled && !el("filename-mode").matches(":focus")) el("filename-mode").value = state.filenameMode;
+    if (!el("search-source").disabled && !el("search-source").matches(":focus")) el("search-source").value = state.searchSource;
     el("active-setlist").replaceChildren(...state.lists.map(list => {
       const option = document.createElement("option"); option.value = list.id; option.textContent = list.name; return option;
     }));
@@ -62,7 +64,7 @@
       actions.push(button("Remove download", async () => {
         if (confirm("Remove the saved file? Unload this track from VirtualDJ first. Your setlists will be kept.")) await trackAction(t.track, "delete");
       }));
-      return row(t.title, `${t.track.startsWith("video:") ? "Video" : "Audio"} · ${t.state}${t.error ? " · " + t.error : ""}`, actions);
+      return row(t.title, `${t.track.startsWith("video:") ? "Video" : "Audio"} · ${t.state}${t.filename && t.state === "ready" ? " · " + t.filename : ""}${t.error ? " · " + t.error : ""}`, actions);
     }));
     fill("history-tracks", state.history.map(t => row(t.title, t.artist, [button("Add to setlist", () => trackAction(t.id, "add"))])));
   }
@@ -80,6 +82,28 @@
   });
   el("delete-setlist").addEventListener("click", () => {
     if (confirm("Delete this setlist? Downloaded files will be kept.")) perform(() => request(`/api/library/setlists/${el("active-setlist").value}/delete`, {}));
+  });
+  el("filename-mode").addEventListener("change", async () => {
+    const select = el("filename-mode");
+    select.disabled = true;
+    try {
+      await request("/api/library/filenames", {mode: select.value});
+      el("library-message").textContent = "Filename preference saved. Existing files keep their names.";
+    } catch (error) {
+      el("library-message").textContent = error.message;
+      try { select.value = (await request("/api/library")).filenameMode; } catch (_) { /* Keep the error visible if offline. */ }
+    } finally { select.disabled = false; }
+  });
+  el("search-source").addEventListener("change", async () => {
+    const select = el("search-source");
+    select.disabled = true;
+    try {
+      await request("/api/library/search-source", {source: select.value});
+      el("library-message").textContent = "Search source saved. Search again in VirtualDJ to see new results.";
+    } catch (error) {
+      el("library-message").textContent = error.message;
+      try { select.value = (await request("/api/library")).searchSource; } catch (_) { /* Keep the error visible if offline. */ }
+    } finally { select.disabled = false; }
   });
   el("new-setlist").addEventListener("submit", event => {
     event.preventDefault(); perform(async () => { await request("/api/library/setlists", {name: el("setlist-name").value}); el("setlist-name").value = ""; });

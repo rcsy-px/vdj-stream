@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 import uuid
+import weakref
 import xml.etree.ElementTree as ET
 from urllib.parse import unquote
 
@@ -61,6 +62,7 @@ class Library:
         self.history_home = history_home
         self.tasks = {}
         self.semaphore = asyncio.Semaphore(1)
+        self.media_locks = weakref.WeakValueDictionary()
         self.poller = None
         self.history_seen = {}
 
@@ -173,6 +175,41 @@ class Library:
         with self.db() as db:
             db.execute('INSERT OR REPLACE INTO config VALUES (?,?)', ('playback_mode', mode))
 
+    def filename_mode(self):
+        with self.db() as db:
+            row = db.execute("SELECT value FROM config WHERE key='filename_mode'").fetchone()
+        return row[0] if row else 'id'
+
+    def search_source(self):
+        with self.db() as db:
+            row = db.execute("SELECT value FROM config WHERE key='search_source'").fetchone()
+        return row[0] if row else 'youtube'
+
+    def set_search_source(self, source):
+        if source not in ('youtube', 'music_songs', 'music_videos'):
+            raise ValueError('Choose YouTube, YouTube Music songs or videos.')
+        with self.db() as db:
+            db.execute('INSERT OR REPLACE INTO config VALUES (?,?)', ('search_source', source))
+
+    def set_filename_mode(self, mode):
+        if mode not in ('id', 'title'):
+            raise ValueError('Choose ID or title filenames.')
+        with self.db() as db:
+            db.execute('INSERT OR REPLACE INTO config VALUES (?,?)', ('filename_mode', mode))
+
+    def download_filename(self, track, suffix):
+        video_id, video = track_parts(track)
+        prefix = 'video-' if video else 'audio-'
+        if self.filename_mode() == 'title':
+            with self.db() as db:
+                row = db.execute('SELECT title FROM tracks WHERE id=?', (video_id,)).fetchone()
+            title = re.sub(r'[<>:"/\\|?*\x00-\x1f\x7f]', '_', row[0] or '') if row else ''
+            # Bound UTF-8 bytes as well as characters for Windows and macOS paths.
+            title = title.encode('utf-8')[:100].decode('utf-8', errors='ignore').strip(' .')
+            if title:
+                return f'{prefix}{title} [{video_id}]{suffix}'
+        return prefix + video_id + suffix
+
     def tracks(self, folder):
         with self.db() as db:
             if folder == 'last-search':
@@ -262,6 +299,67 @@ class Library:
         path = (self.root / 'media' / row[0]).resolve()
         return path if path.parent == (self.root / 'media').resolve() and path.is_file() else None
 
+    def media_candidates(self, track):
+        """Only our final files with this exact ID/type, or its recorded filename."""
+        video_id, video = track_parts(track)
+        folder = (self.root / 'media').resolve()
+        prefix = 'video-' if video else 'audio-'
+        pattern = re.compile(re.escape(prefix) + r'(?:' + re.escape(video_id) + r'|.+ \[' + re.escape(video_id) + r'\])\.(?:mp4|m4a|webm|opus|ogg)$')
+        with self.db() as db:
+            row = db.execute('SELECT filename FROM downloads WHERE track=?', (track,)).fetchone()
+        recorded = row[0] if row else None
+        return sorted((p for p in folder.iterdir()
+                       if (p.name == recorded or pattern.fullmatch(p.name))
+                       and p.resolve().parent == folder and not p.is_symlink() and p.is_file()), key=lambda p: p.name)
+
+    def media_lock(self, track):
+        # Keep locks only while in use, including tasks waiting for this track.
+        lock = self.media_locks.get(track)
+        if lock is None:
+            lock = asyncio.Lock()
+            self.media_locks[track] = lock
+        return lock
+
+    async def validate_media(self, source, video):
+        if source.stat().st_size <= 0:
+            raise ValueError('Saved media is empty.')
+        executable = self.ffmpeg / ('ffprobe.exe' if os.name == 'nt' else 'ffprobe')
+        probe = await asyncio.create_subprocess_exec(str(executable), '-v', 'error', '-show_streams', '-of', 'json', str(source), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        try:
+            output, _ = await asyncio.wait_for(probe.communicate(), 30)
+        except BaseException:
+            if probe.returncode is None:
+                probe.kill()
+            await probe.communicate()
+            raise
+        types = {s.get('codec_type') for s in json.loads(output).get('streams', [])} if probe.returncode == 0 else set()
+        if 'audio' not in types or (video and 'video' not in types):
+            raise ValueError('Downloaded file is missing its audio or video stream.')
+
+    async def _recover_media(self, track):
+        if path := self.media(track):
+            return path
+        for path in self.media_candidates(track):
+            try:
+                await self.validate_media(path, track_parts(track)[1])
+            except (OSError, ValueError, TimeoutError):
+                log.warning('Saved media validation failed for %s; checking other files.', track)
+                continue
+            with self.db() as db:
+                db.execute("INSERT INTO downloads(track,state,error,filename,size) VALUES (?,'ready','',?,?) ON CONFLICT(track) DO UPDATE SET state='ready',error='',filename=excluded.filename,size=excluded.size", (track, path.name, path.stat().st_size))
+            log.info('Recovered saved media for %s; no download needed.', track)
+            return path
+        return None
+
+    async def recover_media(self, track):
+        if path := self.media(track):
+            return path
+        if not self.media_candidates(track):
+            return None
+        # An unrelated download must not delay local playback or file removal.
+        async with self.media_lock(track):
+            return await self._recover_media(track)
+
     def state(self):
         with self.db() as db:
             lists = [dict(r) for r in db.execute('SELECT * FROM lists ORDER BY name')]
@@ -275,6 +373,8 @@ class Library:
                 'usedBytes': sum(p.stat().st_size for p in (self.root / 'media').iterdir() if p.is_file()),
                 'quotaBytes': None, 'freeBytes': shutil.disk_usage(self.root).free,
                 'playbackMode': self.playback_mode(),
+                'filenameMode': self.filename_mode(),
+                'searchSource': self.search_source(),
                 'history': self.tracks('history')}
 
     def open_download_folder(self):
@@ -307,7 +407,7 @@ class Library:
         if len(self.tasks) >= 20:
             raise ValueError('Download queue is full (20 tracks).')
         with self.db() as db:
-            db.execute("INSERT OR REPLACE INTO downloads(track,state,error) VALUES (?,'queued','')", (track,))
+            db.execute("INSERT INTO downloads(track,state,error) VALUES (?,'queued','') ON CONFLICT(track) DO UPDATE SET state='queued',error=''", (track,))
         self.tasks[track] = asyncio.create_task(self._download(track))
 
     async def prepare_video(self, track, timeout=50):
@@ -335,7 +435,9 @@ class Library:
         video_id, video = track_parts(track)
         stage = self.root / 'staging' / uuid.uuid4().hex
         try:
-            async with self.semaphore:
+            async with self.semaphore, self.media_lock(track):
+                if await self._recover_media(track):
+                    return
                 if shutil.disk_usage(self.root).free < 2 * 1024**3:
                     raise ValueError('At least 2 GB of free disk space is required.')
                 stage.mkdir()
@@ -354,20 +456,8 @@ class Library:
                 if len(files) != 1 or files[0].stat().st_size <= 0:
                     raise ValueError('Download did not produce a complete supported file.')
                 source = files[0]
-                # Verify tracks, not merely extension: a partial/video-only file is not playable.
-                executable = self.ffmpeg / ('ffprobe.exe' if os.name == 'nt' else 'ffprobe')
-                probe = await asyncio.create_subprocess_exec(str(executable), '-v', 'error', '-show_streams', '-of', 'json', str(source), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-                try:
-                    output, _ = await asyncio.wait_for(probe.communicate(), 30)
-                except BaseException:
-                    if probe.returncode is None:
-                        probe.kill()
-                    await probe.communicate()
-                    raise
-                types = {s.get('codec_type') for s in json.loads(output).get('streams', [])} if probe.returncode == 0 else set()
-                if 'audio' not in types or (video and 'video' not in types):
-                    raise ValueError('Downloaded file is missing its audio or video stream.')
-                filename = ('video-' if video else 'audio-') + video_id + source.suffix
+                await self.validate_media(source, video)
+                filename = self.download_filename(track, source.suffix)
                 target = self.root / 'media' / filename
                 source.replace(target)
                 with self.db() as db:
@@ -394,8 +484,9 @@ class Library:
 
     async def delete(self, track):
         await self.cancel(track)
-        path = self.media(track)
-        if path:
-            path.unlink()
-        with self.db() as db:
-            db.execute('DELETE FROM downloads WHERE track=?', (track,))
+        async with self.media_lock(track):
+            # Remove alternate names too, so recovery cannot resurrect a deletion.
+            for path in self.media_candidates(track):
+                path.unlink()
+            with self.db() as db:
+                db.execute('DELETE FROM downloads WHERE track=?', (track,))

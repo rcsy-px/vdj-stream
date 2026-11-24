@@ -263,6 +263,7 @@ def test_storage_and_authenticated_folder_open(library, monkeypatch):
 
 @pytest.mark.parametrize('video,streams,expected', [(False, ['audio'], 'ready'), (True, ['audio','video'], 'ready'), (True, ['video'], 'failed')])
 async def test_download_validates_streams_before_exposing_media(library, monkeypatch, video, streams, expected):
+    library.set_filename_mode('title')
     class Runner:
         async def run(self, *args, **kwargs):
             assert '--max-filesize' not in args
@@ -281,4 +282,121 @@ async def test_download_validates_streams_before_exposing_media(library, monkeyp
     await asyncio.gather(*library.tasks.values())
     assert library.state()['downloads'][0]['state'] == expected
     assert bool(library.media(key)) == (expected == 'ready')
+    if expected == 'ready':
+        assert library.media(key).name == library.download_filename(key, '.mp4' if video else '.m4a')
     assert not list((library.root / 'staging').iterdir())
+
+
+@pytest.mark.parametrize('video', [False, True])
+@pytest.mark.parametrize('record', ['missing', 'interrupted', 'stale'])
+@pytest.mark.parametrize('mode', ['id', 'title'])
+async def test_saved_media_recovered_without_downloader(library, monkeypatch, video, record, mode):
+    key = 'video:' + TRACK if video else TRACK
+    library.set_filename_mode(mode)
+    file = library.root / 'media' / library.download_filename(key, '.mp4' if video else '.m4a')
+    file.write_bytes(b'complete fixture')
+    if record != 'missing':
+        with library.db() as db:
+            db.execute('INSERT INTO downloads(track,state,filename) VALUES (?,?,?)',
+                       (key, 'ready' if record == 'stale' else record, 'missing.mp4' if record == 'stale' else file.name))
+    checked = []
+    async def validate(path, is_video):
+        checked.append((path, is_video))
+    monkeypatch.setattr(library, 'validate_media', validate)
+    # Reuse must also work below the free-space threshold, without a runner.
+    monkeypatch.setattr('backend.app.library.shutil.disk_usage', lambda _: SimpleNamespace(free=1024))
+    if video:
+        first, second = await asyncio.gather(library.prepare_video(key), library.prepare_video(key))
+        assert first == second == file
+    else:
+        library.enqueue(key)
+        await asyncio.gather(*library.tasks.values())
+    assert library.media(key) == file
+    assert checked == [(file, video)]
+    assert library.state()['downloads'][0]['size'] == file.stat().st_size
+    library.initialize()
+    assert await library.recover_media(key) == file
+    assert len(checked) == 1
+
+
+async def test_recovery_checks_only_matching_final_files_and_rejects_corruption(library, monkeypatch):
+    folder = library.root / 'media'
+    valid_name = f'video-{TRACK}.mp4'
+    for name in [valid_name, f'audio-{TRACK}.m4a', f'video-{TRACK}.mp4.part', 'video-12345678901.mp4']:
+        (folder / name).write_bytes(b'corrupt')
+    (library.root / 'staging' / valid_name).write_bytes(b'partial')
+    checked = []
+    async def validate(path, video):
+        checked.append(path.name)
+        raise ValueError('Invalid media')
+    monkeypatch.setattr(library, 'validate_media', validate)
+    assert await library.recover_media('video:' + TRACK) is None
+    assert checked == [valid_name]
+    assert library.media('video:' + TRACK) is None
+
+
+async def test_saved_audio_recovery_prevents_online_resolution(library, monkeypatch):
+    from backend.app import main
+    monkeypatch.setattr(main, 'library', library)
+    file = library.root / 'media' / f'audio-{TRACK}.m4a'
+    file.write_bytes(b'fixture')
+    async def validate(*args):
+        pass
+    async def resolve(*args):
+        pytest.fail('Saved audio must not contact YouTube')
+    monkeypatch.setattr(library, 'validate_media', validate)
+    monkeypatch.setattr(main, 'resolve_video', resolve)
+    response = await main.vdj_source_stream(TRACK)
+    assert '/stream/library/' in response.body.decode()
+    assert library.media(TRACK) == file
+
+
+async def test_delete_removes_alternate_names_without_touching_other_tracks(library):
+    folder = library.root / 'media'
+    for name in [f'video-{TRACK}.mp4', f'video-Title [{TRACK}].mp4', f'audio-{TRACK}.m4a', 'unrelated.mp4']:
+        (folder / name).write_bytes(b'fixture')
+    await library.delete('video:' + TRACK)
+    assert sorted(p.name for p in folder.iterdir()) == [f'audio-{TRACK}.m4a', 'unrelated.mp4']
+    assert await library.recover_media('video:' + TRACK) is None
+
+
+async def test_local_recovery_and_removal_do_not_wait_for_unrelated_download(library, monkeypatch):
+    file = library.root / 'media' / f'audio-{TRACK}.m4a'
+    file.write_bytes(b'fixture')
+    async def validate(*args):
+        pass
+    monkeypatch.setattr(library, 'validate_media', validate)
+    async with library.semaphore:
+        assert await asyncio.wait_for(library.recover_media(TRACK), .5) == file
+        await asyncio.wait_for(library.delete(TRACK), .5)
+    assert not file.exists()
+    assert not library.media_locks
+
+
+def test_filename_preference_is_authenticated_validated_and_persistent(library):
+    app = FastAPI()
+    app.include_router(routes(library, 'secret'))
+    with TestClient(app) as client:
+        assert client.post('/api/library/filenames', json={'mode': 'title'}).status_code == 403
+        headers = {'X-Shutdown-Token': 'secret'}
+        assert client.post('/api/library/filenames', headers=headers, json={'mode': '../unsafe'}).status_code == 422
+        assert library.filename_mode() == 'id'
+        assert client.post('/api/library/filenames', headers=headers, json={'mode': 'title'}).status_code == 200
+        assert client.get('/api/library').json()['filenameMode'] == 'title'
+    library.initialize()
+    assert library.filename_mode() == 'title'
+
+
+@pytest.mark.parametrize('title', ['../CON: <title>?*|"\\\x00', '😀á' * 200, '', '...', 'Same title'])
+def test_title_filenames_are_safe_bounded_unique_and_keep_id(library, title):
+    library.set_filename_mode('title')
+    other = '12345678901'
+    with library.db() as db:
+        for key in [TRACK, other]:
+            db.execute('INSERT OR REPLACE INTO tracks(id,title) VALUES (?,?)', (key, title))
+    name = library.download_filename(TRACK, '.m4a')
+    assert len(name.encode('utf-8')) < 140
+    assert not any(c in name for c in '<>:"/\\|?*\x00')
+    assert TRACK in name
+    assert name != library.download_filename(other, '.m4a')
+    assert name != library.download_filename('video:' + TRACK, '.m4a')

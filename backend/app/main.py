@@ -23,6 +23,7 @@ from .logging_config import configure_logging
 from .models import ResolveResponse, SearchResponse
 from .search.chromium_youtube import ChromiumYouTubeSearchProvider
 from .search.ytdlp_search import YtDlpSearchProvider
+from .search.youtube_music import YouTubeMusicSearchProvider
 from .stream.proxy import proxy_youtube_stream
 from .stream.naming import stream_url
 from .stream.resolver import YtDlpResolver
@@ -50,6 +51,9 @@ browser_search = ChromiumYouTubeSearchProvider(
 )
 ytdlp_runner = YtDlpRunner(settings.ytdlp_exe)
 ytdlp_search = YtDlpSearchProvider(settings.ytdlp_exe, settings.search_timeout_seconds, runner=ytdlp_runner)
+music_slots = asyncio.Semaphore(2)
+music_search = {source: YouTubeMusicSearchProvider(category, settings.search_timeout_seconds, music_slots)
+                for source, category in [('music_songs', 'songs'), ('music_videos', 'videos')]}
 resolver = YtDlpResolver(
     settings.ytdlp_exe,
     settings.resolve_timeout_seconds,
@@ -91,8 +95,8 @@ app.mount("/static", StaticFiles(directory=WEB_ROOT), name="static")
 SEARCH_CACHE_NAMESPACE = "v2-ytdlp-primary"
 
 
-def _search_cache_key(query: str) -> str:
-    return f"{SEARCH_CACHE_NAMESPACE}:{query}"
+def _search_cache_key(query: str, source: str = 'youtube') -> str:
+    return f"{SEARCH_CACHE_NAMESPACE}:{source}:{query}"
 
 
 def _health_payload() -> dict:
@@ -252,7 +256,8 @@ async def _search(q: str, limit: int) -> SearchResponse:
     q = q.strip()
     if len(q) < 2:
         raise HTTPException(422, "Search query must contain at least two non-space characters")
-    cache_key = _search_cache_key(q)
+    source = library.search_source()
+    cache_key = _search_cache_key(q, source)
     cached = await cache.get(cache_key, limit)
     if cached:
         provider, results = cached
@@ -261,7 +266,8 @@ async def _search(q: str, limit: int) -> SearchResponse:
         )
     errors: list[str] = []
     completed = False
-    for provider in (ytdlp_search, browser_search):
+    providers = (ytdlp_search, browser_search) if source == 'youtube' else (music_search[source],)
+    for provider in providers:
         try:
             results = await asyncio.wait_for(provider.search(q, limit), settings.search_timeout_seconds)
             completed = True
@@ -294,7 +300,7 @@ async def vdj_source_search(
 ) -> PlainTextResponse:
     response = await search(q, limit)
     if response.error:
-        return PlainTextResponse("YouTube search failed. Check Live logs in the control panel.", status_code=502)
+        return PlainTextResponse("Search failed. Check Live logs or change Search source in Companion.", status_code=502)
     library.remember_search(q, response.results)
     return PlainTextResponse(library.tsv('last-search'))
 
@@ -304,6 +310,8 @@ async def vdj_source_stream(video_id: str) -> PlainTextResponse:
     try:
         _, video = track_parts(video_id)
         saved = library.media(video_id)
+        if not video and not saved:
+            saved = await library.recover_media(video_id)
     except ValueError as exc:
         raise HTTPException(400, str(exc))
     if video and not saved:

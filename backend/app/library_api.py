@@ -16,6 +16,14 @@ class PlaybackSettings(BaseModel):
     mode: Literal['audio', 'video']
 
 
+class FilenameSettings(BaseModel):
+    mode: Literal['id', 'title']
+
+
+class SearchSettings(BaseModel):
+    source: Literal['youtube', 'music_songs', 'music_videos']
+
+
 def routes(library, token, app_busy=lambda: False):
     router = APIRouter()
 
@@ -50,6 +58,18 @@ def routes(library, token, app_busy=lambda: False):
             await asyncio.to_thread(library.open_download_folder)
         except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
             raise HTTPException(503, 'Could not open the download folder. Try again from the computer running Companion.') from exc
+        return {'ok': True}
+
+    @router.post('/api/library/filenames')
+    async def filenames(request: Request, body: FilenameSettings):
+        authorize(request)
+        library.set_filename_mode(body.mode)
+        return {'ok': True}
+
+    @router.post('/api/library/search-source')
+    async def search_source(request: Request, body: SearchSettings):
+        authorize(request)
+        library.set_search_source(body.source)
         return {'ok': True}
 
     @router.post('/api/library/setlists')

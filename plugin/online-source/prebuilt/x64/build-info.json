@@ -7,6 +7,6 @@
                     "plugin/online-source/VdjCompanionSource.vcxproj":  "445a01d68f30656e64a64b1db2d4fb503e6d1d8f2eb7fcb318f5b786a0c67b4f",
                     "plugin/online-source/src/Main.cpp":  "857cfa7e4ba58f52f1a4e40e09379dbce2890e725dd419592a47aa5c4b5d2513"
                 },
-    "sha256":  "2fe9ad469136c6e2c5e2c7369606ef701a63f359fc4d399409ea56f5ffca07c3",
-    "version":  "0.3.3"
+    "sha256":  "7cef7b25ac1934cc6d7e57aa524c4f880676f824c8b863483f9e5ae02bc80c4c",
+    "version":  "0.4.0"
 }

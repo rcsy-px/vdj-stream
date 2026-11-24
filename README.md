@@ -4,7 +4,7 @@
 
 <h1 align="center">VDJ Companion</h1>
 
-> **New in 0.3.3:** choose Audio or Video as the default for VirtualDJ search results. Video mode prepares and saves the video automatically when you load a deck.
+> **New in 0.4.0:** choose YouTube or YouTube Music (Songs / Videos) as your search source. Includes optional title-based download filenames and better recovery of saved media.
 > [Library guide](docs/LIBRARY-PREVIEW.md) · [macOS public beta](docs/MACOS.md)
 
 <p align="center">
@@ -29,6 +29,7 @@ companion service handling search and audio streaming. A retro control panel
 shows component status, live logs, and available updates.
 
 - Search and load tracks without leaving VirtualDJ; return to results with **Last search**.
+- Choose **YouTube Music · Songs** for music catalogue results, or **Videos** for music videos. No additional login required.
 - Save setlists, download audio for offline use, and prepare videos up to 720p.
 - Browse played tracks from VirtualDJ History.
 - Set up with one launcher; no manual plugin copying or build tools required.
@@ -59,6 +60,8 @@ Open **[127.0.0.1:8765](http://127.0.0.1:8765/)** whenever the backend is runnin
 | Update yt-dlp | Installs the latest stable YouTube engine when an update is available. |
 | Run checks | Tests both search providers, audio resolution, and receiving audio bytes. |
 | Live logs | Shows activity and error details for troubleshooting. |
+| Search source | Choose YouTube, YouTube Music Songs, or YouTube Music Videos; then search again in VirtualDJ. |
+| Save new files using | Choose ID-only or track title + ID filenames. Existing files keep their names. |
 | Shutdown backend | Stops the service. Use it when you're finished streaming. |
 
 `STOP.bat` also stops the service. `START-DEBUG.bat` opens a visible console for troubleshooting.

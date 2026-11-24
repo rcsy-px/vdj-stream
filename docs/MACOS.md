@@ -5,8 +5,8 @@ alongside VirtualDJ and provides a browser control panel for status and updates.
 
 **Public beta · Intel and Apple Silicon · macOS 14 or later**
 
-[Download 0.3.0 beta 1](https://github.com/rcsy-px/vdj-stream/releases/download/macos-v0.3.0-beta.1/vdj-companion-0.3.0-beta.1-macos-universal.zip)
-· [Release notes](https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.3.0-beta.1)
+[Download 0.4.0 beta 1](https://github.com/rcsy-px/vdj-stream/releases/download/macos-v0.4.0-beta.1/vdj-companion-0.4.0-beta.1-macos-universal.zip)
+· [Release notes](https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.4.0-beta.1)
 · [Report a problem](https://github.com/rcsy-px/vdj-stream/issues)
 
 No GitHub account is needed to download. Installation and update flows have
@@ -15,7 +15,7 @@ feedback from people using real VirtualDJ installations.
 
 ## Library features
 
-Version 0.3.0 adds setlists, offline audio, prepared videos up to 720p, played-track history and Last search. Right-click a track for the Companion: actions. See [the library guide](LIBRARY-PREVIEW.md) for details; its Windows installation steps do not apply to macOS.
+Version 0.4.0 adds a Search source selector for YouTube and YouTube Music (Songs / Videos), title-based download filenames and saved-media recovery. Setlists, offline audio, prepared videos up to 720p, played-track history and Last search are included. Right-click a track for the Companion: actions. See [the library guide](LIBRARY-PREVIEW.md) for details; its Windows installation steps do not apply to macOS.
 
 ## Before you start
 
@@ -29,7 +29,7 @@ installation. The launcher downloads the required tools into its own folder.
 ## Download and start Companion
 
 1. Download the **macOS ZIP** linked above. Under release **Assets**, choose
-   `vdj-companion-0.3.0-beta.1-macos-universal.zip`, not a source-code archive.
+   `vdj-companion-0.4.0-beta.1-macos-universal.zip`, not a source-code archive.
    The same ZIP works on Intel and Apple Silicon.
 2. Double-click the ZIP to extract it. Move the extracted folder somewhere
    permanent and writable, such as inside your home folder, **before** running it.

@@ -1,6 +1,6 @@
 # Library, setlists and video
 
-Available in Windows 0.3.0 and macOS 0.3.0 beta 1. The macOS build remains a public beta; real-device VirtualDJ testing is still needed.
+Available in Windows 0.4.0 and macOS 0.4.0 beta 1. The macOS build remains a public beta; real-device VirtualDJ testing is still needed.
 
 ## Prepare a Windows test session
 
@@ -10,7 +10,7 @@ Available in Windows 0.3.0 and macOS 0.3.0 beta 1. The macOS build remains a pub
    `Plugins64/OnlineSources` folder before installing this version.
 3. Extract the release ZIP to a **new permanent folder**, then run its
    `START.bat`. The launcher installs the source plugin.
-4. Confirm the panel shows **0.3.0**, then open VirtualDJ.
+4. Confirm the panel shows **0.4.0**, then open VirtualDJ.
 
 The new installation uses its own data folder. Do not run two Companion backends on port
 8765 at once. To roll back, quit VirtualDJ, stop the new backend, restore the
@@ -18,6 +18,23 @@ backed-up DLL and start the stable Companion again. Your existing VirtualDJ
 database and History are not modified by the history importer.
 
 ## Returning to search results
+
+In **Library & Setlists → Search source**, choose:
+
+- **YouTube:** the original broad search, including remixes and other uploads.
+- **YouTube Music · Songs:** search the public music catalogue with artist, duration and cover metadata.
+- **YouTube Music · Videos:** search YouTube Music's video results.
+
+The choice persists across restarts and works on Windows and macOS without an
+additional login. Search again in VirtualDJ after changing it. Existing Last
+search results stay available until the next successful search. Cached results
+are kept separate by source; a Music error does not silently switch to YouTube.
+Retry or select YouTube if Music is unavailable.
+
+**Search source** and **Load search results as** are independent: either source
+can load audio or prepare video. Songs may only have a still cover; choose Videos
+when looking for music videos. Search access does not guarantee that every
+result is available for playback in your region.
 
 The **Last search** source folder restores the latest successful search results
 without repeating the online search, even after a backend restart. Switching to
@@ -75,6 +92,25 @@ space is required. Downloads stop if free space drops below that reserve; free u
 space and retry. The panel supports cancel, retry and remove. Unload
 a track from VirtualDJ before removing its saved file. Interrupted downloads are
 marked for retry on restart; partial files are never offered as ready media.
+
+## Saved files and filenames (0.4.0)
+
+Under **Library & Setlists → Downloads → Save new files using**, choose
+**Video ID** (the existing default) or **Track title + ID**. The latter creates
+names such as `video-Track title [abcdefghijk].mp4`. The ID prevents collisions
+between tracks with the same title; unsupported filename characters are replaced.
+This preference applies to new downloads on Windows and macOS. Existing files
+keep their names and continue to work.
+
+Before downloading again, Companion checks for a matching saved file if its
+library entry is missing or stale. It verifies the required media streams and
+restores the entry without contacting YouTube. Keep the ID and audio/video prefix
+in the filename so it can be recovered even without its database entry. Partial
+files in the staging folder are never reused. Continue backing up the whole
+`data/library` folder to preserve setlists and metadata too.
+
+VirtualDJ can still show a loading bar while buffering a saved file through
+Companion's local server. This alone does not mean YouTube is being downloaded again.
 
 ## Video
 

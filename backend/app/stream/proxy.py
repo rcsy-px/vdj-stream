@@ -55,8 +55,9 @@ async def proxy_youtube_stream(
             if stream.available_at is not None:
                 wait_seconds = stream.available_at - time.time()
                 if wait_seconds > 0:
-                    # Wait for YouTube's pre-roll availability window before requesting the media URL.
-                    await asyncio.sleep(min(wait_seconds, 25.0))
+                    # Never request a URL before it is available. The endpoint's
+                    # overall timeout covers resolution, this wait and retries.
+                    await asyncio.sleep(wait_seconds)
             headers = {**stream.http_headers, "Accept-Encoding": "identity"}
             if range_header:
                 headers["Range"] = range_header

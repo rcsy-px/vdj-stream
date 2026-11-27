@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from backend.app.main import app, shutdown_token
@@ -261,38 +262,125 @@ async def test_resolver_extracts_available_at(monkeypatch, payload, expected):
     assert stream.available_at == expected
 
 
-@pytest.mark.parametrize('delta,expected_sleep', [(6.0, 6.0), (40.0, 25.0), (-2.0, None)])
+@pytest.mark.parametrize('delta,expected_sleep', [(6.0, 6.0), (40.0, 40.0), (-2.0, None)])
 async def test_proxy_waits_for_available_at_before_request(monkeypatch, delta, expected_sleep):
     sleeps = []
     now = 1700000000.0
+    available_at = now + delta
+    extractions = 0
+    resolver = YtDlpResolver(Path('unused'))
 
     async def fake_sleep(seconds):
+        nonlocal now
         sleeps.append(seconds)
+        now += seconds
 
-    async def resolve(*args, **kwargs):
-        return ResolvedStream(
-            video_id='abcdefghijk',
-            title='Track',
-            upstream_url='https://audio.example/file',
-            available_at=now + delta,
-        )
+    async def extract(*args, **kwargs):
+        nonlocal extractions
+        extractions += 1
+        return json.dumps({'url': 'https://audio.example/file', 'available_at': available_at})
 
     def handler(request):
-        assert len(sleeps) == (1 if expected_sleep is not None else 0)
+        assert now >= available_at, 'Must not request media before it is available'
+        assert request.headers['range'] == 'bytes=0-3'
         return httpx.Response(206, headers={'content-range': 'bytes 0-3/4'}, content=b'data')
 
     original = httpx.AsyncClient
+    monkeypatch.setattr(resolver.runner, 'run', extract)
     monkeypatch.setattr('backend.app.stream.proxy.time.time', lambda: now)
-    monkeypatch.setattr('backend.app.stream.proxy.asyncio.sleep', fake_sleep)
+    monkeypatch.setattr('backend.app.stream.proxy.asyncio', SimpleNamespace(sleep=fake_sleep))
     monkeypatch.setattr(
         'backend.app.stream.proxy.httpx.AsyncClient',
         lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs),
     )
 
     request = httpx.Request('GET', 'http://localhost/stream', headers={'Range': 'bytes=0-3'})
-    response = await proxy_youtube_stream(request, 'abcdefghijk', SimpleNamespace(resolve=resolve))
-    body = b''.join([chunk async for chunk in response.body_iterator])
+    # A subsequent range request reuses the resolved URL with no extra wait.
+    for _ in range(2):
+        response = await proxy_youtube_stream(request, 'abcdefghijk', resolver)
+        body = b''.join([chunk async for chunk in response.body_iterator])
+        assert response.status_code == 206
+        assert body == b'data'
 
-    assert response.status_code == 206
-    assert body == b'data'
+    assert extractions == 1
     assert sleeps == ([] if expected_sleep is None else [expected_sleep])
+
+
+@pytest.mark.parametrize('status', [403, 410])
+async def test_proxy_waits_for_refreshed_url_and_closes_both_clients(monkeypatch, status):
+    now = 1700000000.0
+    available_at = now + 40
+    forces, sleeps, clients = [], [], []
+
+    async def resolve(video_id, force=False):
+        forces.append(force)
+        return ResolvedStream(video_id=video_id, title='Track',
+                              upstream_url='https://audio.example/fresh' if force else 'https://audio.example/stale',
+                              available_at=available_at if force else None)
+
+    async def sleep(seconds):
+        nonlocal now
+        sleeps.append(seconds)
+        now += seconds
+
+    def handler(request):
+        if request.url.path == '/stale':
+            return httpx.Response(status)
+        assert now >= available_at
+        return httpx.Response(206, content=b'data')
+
+    original = httpx.AsyncClient
+    def client(**kwargs):
+        instance = original(transport=httpx.MockTransport(handler), **kwargs)
+        clients.append(instance)
+        return instance
+
+    monkeypatch.setattr('backend.app.stream.proxy.time.time', lambda: now)
+    monkeypatch.setattr('backend.app.stream.proxy.asyncio', SimpleNamespace(sleep=sleep))
+    monkeypatch.setattr('backend.app.stream.proxy.httpx.AsyncClient', client)
+    response = await proxy_youtube_stream(httpx.Request('GET', 'http://localhost/stream'),
+                                          'abcdefghijk', SimpleNamespace(resolve=resolve))
+    assert b''.join([chunk async for chunk in response.body_iterator]) == b'data'
+    assert forces == [False, True]
+    assert sleeps == [40]
+    assert len(clients) == 2 and all(client.is_closed for client in clients)
+
+
+@pytest.mark.parametrize('cancel', [False, True])
+async def test_availability_wait_obeys_request_deadline_and_cancellation(monkeypatch, caplog, cancel):
+    from backend.app.main import _youtube_stream, settings
+
+    entered = asyncio.Event()
+    stopped = asyncio.Event()
+    async def sleep(seconds):
+        assert seconds > 0
+        entered.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            stopped.set()
+
+    async def resolve(video_id, force=False):
+        import time
+        return ResolvedStream(video_id=video_id, title='Track',
+                              upstream_url='https://audio.example/file', available_at=time.time() + 120)
+
+    def client(**kwargs):
+        pytest.fail('No upstream request may start while the URL is unavailable')
+
+    monkeypatch.setattr('backend.app.main.resolver', SimpleNamespace(resolve=resolve))
+    monkeypatch.setattr(settings, 'request_timeout_seconds', 1 if cancel else .05)
+    monkeypatch.setattr('backend.app.stream.proxy.asyncio', SimpleNamespace(sleep=sleep))
+    monkeypatch.setattr('backend.app.stream.proxy.httpx.AsyncClient', client)
+    task = asyncio.create_task(_youtube_stream(httpx.Request('GET', 'http://localhost/stream'), 'abcdefghijk'))
+    await asyncio.wait_for(entered.wait(), 1)
+    if cancel:
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    else:
+        with pytest.raises(HTTPException) as error:
+            await asyncio.wait_for(task, 1)
+        assert error.value.status_code == 504
+        assert 'Proxy timed out for abcdefghijk' in caplog.text
+    assert stopped.is_set()

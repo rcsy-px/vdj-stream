@@ -386,6 +386,7 @@ async def _youtube_stream(
     except YtDlpBusyError as exc:
         raise HTTPException(503, str(exc), headers={"Retry-After": "5"}) from exc
     except (TimeoutError, httpx.TimeoutException) as exc:
+        logger.warning("Proxy timed out for %s", video_id)
         raise HTTPException(504, "Audio server timed out. Please reload the track.") from exc
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc

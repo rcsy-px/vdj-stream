@@ -5,13 +5,15 @@ alongside VirtualDJ and provides a browser control panel for status and updates.
 
 **Public beta · Intel and Apple Silicon · macOS 14 or later**
 
-[Download 0.4.0 beta 1](https://github.com/rcsy-px/vdj-stream/releases/download/macos-v0.4.0-beta.1/vdj-companion-0.4.0-beta.1-macos-universal.zip)
-· [Release notes](https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.4.0-beta.1)
+[Download 0.4.1 beta 1](https://github.com/rcsy-px/vdj-stream/releases/download/macos-v0.4.1-beta.1/vdj-companion-0.4.1-beta.1-macos-universal.zip)
+· [Release notes](https://github.com/rcsy-px/vdj-stream/releases/tag/macos-v0.4.1-beta.1)
 · [Report a problem](https://github.com/rcsy-px/vdj-stream/issues)
 
 No GitHub account is needed to download. Installation and update flows have
 automated tests on both Mac CPU families, but search and deck playback still need
 feedback from people using real VirtualDJ installations.
+
+Version 0.4.1 fixes a cause of HTTP 502 audio-loading errors by waiting until YouTube links become available.
 
 ## Library features
 
@@ -29,7 +31,7 @@ installation. The launcher downloads the required tools into its own folder.
 ## Download and start Companion
 
 1. Download the **macOS ZIP** linked above. Under release **Assets**, choose
-   `vdj-companion-0.4.0-beta.1-macos-universal.zip`, not a source-code archive.
+   `vdj-companion-0.4.1-beta.1-macos-universal.zip`, not a source-code archive.
    The same ZIP works on Intel and Apple Silicon.
 2. Double-click the ZIP to extract it. Move the extracted folder somewhere
    permanent and writable, such as inside your home folder, **before** running it.

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.1 - 2026-11-27
+
+- Wait until yt-dlp's `available_at` timestamp before requesting a YouTube audio stream, fixing a cause of HTTP 502 track-loading errors.
+- Honor the full availability delay within the existing total request deadline, including refreshed URLs; cached streams do not wait again once available.
+- Log upstream failures and stream timeouts for troubleshooting.
+- Add regression coverage for long waits, repeated range requests, URL refresh, timeouts and cancellation.
+- Includes macOS 0.4.1 beta 1 for Intel and Apple Silicon.
+- Thanks to @kernel-machine for identifying the issue and contributing the initial fix in PR #13.
+
 ## 0.4.0 - 2026-11-24
 
 - Add a persistent Search source selector: YouTube, YouTube Music Songs, or YouTube Music Videos, with artist, duration and cover metadata.

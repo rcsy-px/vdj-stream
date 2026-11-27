@@ -4,7 +4,7 @@
 
 <h1 align="center">VDJ Companion</h1>
 
-> **New in 0.4.0:** choose YouTube or YouTube Music (Songs / Videos) as your search source. Includes optional title-based download filenames and better recovery of saved media.
+> **New in 0.4.1:** fixes an HTTP 502 track-loading error when YouTube requires a short wait before streaming. YouTube Music search, saved downloads and setlists remain available.
 > [Library guide](docs/LIBRARY-PREVIEW.md) · [macOS public beta](docs/MACOS.md)
 
 <p align="center">

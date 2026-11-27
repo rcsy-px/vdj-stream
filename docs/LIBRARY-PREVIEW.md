@@ -1,6 +1,6 @@
 # Library, setlists and video
 
-Available in Windows 0.4.0 and macOS 0.4.0 beta 1. The macOS build remains a public beta; real-device VirtualDJ testing is still needed.
+Available in Windows 0.4.1 and macOS 0.4.1 beta 1. The macOS build remains a public beta; real-device VirtualDJ testing is still needed.
 
 ## Prepare a Windows test session
 
@@ -10,7 +10,7 @@ Available in Windows 0.4.0 and macOS 0.4.0 beta 1. The macOS build remains a pub
    `Plugins64/OnlineSources` folder before installing this version.
 3. Extract the release ZIP to a **new permanent folder**, then run its
    `START.bat`. The launcher installs the source plugin.
-4. Confirm the panel shows **0.4.0**, then open VirtualDJ.
+4. Confirm the panel shows **0.4.1**, then open VirtualDJ.
 
 The new installation uses its own data folder. Do not run two Companion backends on port
 8765 at once. To roll back, quit VirtualDJ, stop the new backend, restore the

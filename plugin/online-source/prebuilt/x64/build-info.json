@@ -1,12 +1,12 @@
-﻿{
-    "sources":  {
-                    "plugin/online-source/src/VdjCompanionSource.cpp":  "fd3f91edd8d5c357eaa2e99e53fa00bd0a43712adc70493a20c946b24ae2c6fc",
-                    "plugin/online-source/src/VdjCompanionSource.h":  "42d76f2886d1566a704da1c390fda08f3fe7f4b631b7fa99813118f7bf171c28",
-                    "plugin/sdk/vdjOnlineSource.h":  "8f61be0ace58e17b7ff357186c9fc370749ff2b06c25ec6b71f9f3846d735430",
-                    "plugin/sdk/vdjPlugin8.h":  "454766a77e333f13390372019c5c0191c303cde95a645fc0e19a596bb1f3e7bb",
-                    "plugin/online-source/VdjCompanionSource.vcxproj":  "445a01d68f30656e64a64b1db2d4fb503e6d1d8f2eb7fcb318f5b786a0c67b4f",
-                    "plugin/online-source/src/Main.cpp":  "857cfa7e4ba58f52f1a4e40e09379dbce2890e725dd419592a47aa5c4b5d2513"
-                },
-    "sha256":  "7cef7b25ac1934cc6d7e57aa524c4f880676f824c8b863483f9e5ae02bc80c4c",
-    "version":  "0.4.0"
+{
+  "version": "0.4.1",
+  "sha256": "6ca42e05718f51194b6f3e62bccfa1192166621601b8dd3b1e0bacd631cd5b72",
+  "sources": {
+    "plugin/online-source/src/VdjCompanionSource.h": "42d76f2886d1566a704da1c390fda08f3fe7f4b631b7fa99813118f7bf171c28",
+    "plugin/sdk/vdjOnlineSource.h": "8f61be0ace58e17b7ff357186c9fc370749ff2b06c25ec6b71f9f3846d735430",
+    "plugin/online-source/src/Main.cpp": "857cfa7e4ba58f52f1a4e40e09379dbce2890e725dd419592a47aa5c4b5d2513",
+    "plugin/online-source/VdjCompanionSource.vcxproj": "445a01d68f30656e64a64b1db2d4fb503e6d1d8f2eb7fcb318f5b786a0c67b4f",
+    "plugin/sdk/vdjPlugin8.h": "454766a77e333f13390372019c5c0191c303cde95a645fc0e19a596bb1f3e7bb",
+    "plugin/online-source/src/VdjCompanionSource.cpp": "fd3f91edd8d5c357eaa2e99e53fa00bd0a43712adc70493a20c946b24ae2c6fc"
+  }
 }

@@ -389,7 +389,9 @@ async def _youtube_stream(
         raise HTTPException(504, "Audio server timed out. Please reload the track.") from exc
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
-    except HTTPException:
+    except HTTPException as exc:
+        if exc.status_code >= 500:
+            logger.warning("Proxy failed for %s (HTTP %s): %s", video_id, exc.status_code, exc.detail)
         raise
     except Exception as exc:
         message = _error_message(exc)

@@ -63,6 +63,9 @@ class YtDlpResolver:
         if not upstream_url:
             raise RuntimeError("yt-dlp did not return a playable audio URL")
         expires = self._expiry_from_url(upstream_url)
+        available_at = info.get("available_at")
+        if available_at is None and info.get("requested_downloads"):
+            available_at = info["requested_downloads"][0].get("available_at")
         stream = ResolvedStream(
             video_id=video_id,
             title=info.get("title") or video_id,
@@ -79,6 +82,11 @@ class YtDlpResolver:
                 abr=info.get("abr"),
             ),
             expires_at=expires,
+            available_at=(
+                float(available_at)
+                if isinstance(available_at, (int, float)) and not isinstance(available_at, bool)
+                else None
+            ),
         )
         cache_until = min(expires or int(time.time()) + self.ttl, int(time.time()) + self.ttl)
         self._cache[video_id] = (cache_until, stream)

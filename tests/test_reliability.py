@@ -234,3 +234,65 @@ async def test_cancelled_resolver_waiter_does_not_leak_lock(monkeypatch):
     first.cancel()
     await asyncio.gather(first, second, return_exceptions=True)
     assert not resolver._locks
+
+
+@pytest.mark.parametrize(
+    'payload,expected',
+    [
+        ({'url': 'https://audio.example/file', 'available_at': 1700000006}, 1700000006.0),
+        (
+            {
+                'url': 'https://audio.example/file',
+                'requested_downloads': [{'available_at': 1700000010}],
+            },
+            1700000010.0,
+        ),
+        ({'url': 'https://audio.example/file'}, None),
+    ],
+)
+async def test_resolver_extracts_available_at(monkeypatch, payload, expected):
+    resolver = YtDlpResolver(Path('unused'))
+
+    async def run(*args, **kwargs):
+        return json.dumps(payload)
+
+    monkeypatch.setattr(resolver.runner, 'run', run)
+    stream = await resolver.resolve('abcdefghijk')
+    assert stream.available_at == expected
+
+
+@pytest.mark.parametrize('delta,expected_sleep', [(6.0, 6.0), (40.0, 25.0), (-2.0, None)])
+async def test_proxy_waits_for_available_at_before_request(monkeypatch, delta, expected_sleep):
+    sleeps = []
+    now = 1700000000.0
+
+    async def fake_sleep(seconds):
+        sleeps.append(seconds)
+
+    async def resolve(*args, **kwargs):
+        return ResolvedStream(
+            video_id='abcdefghijk',
+            title='Track',
+            upstream_url='https://audio.example/file',
+            available_at=now + delta,
+        )
+
+    def handler(request):
+        assert len(sleeps) == (1 if expected_sleep is not None else 0)
+        return httpx.Response(206, headers={'content-range': 'bytes 0-3/4'}, content=b'data')
+
+    original = httpx.AsyncClient
+    monkeypatch.setattr('backend.app.stream.proxy.time.time', lambda: now)
+    monkeypatch.setattr('backend.app.stream.proxy.asyncio.sleep', fake_sleep)
+    monkeypatch.setattr(
+        'backend.app.stream.proxy.httpx.AsyncClient',
+        lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs),
+    )
+
+    request = httpx.Request('GET', 'http://localhost/stream', headers={'Range': 'bytes=0-3'})
+    response = await proxy_youtube_stream(request, 'abcdefghijk', SimpleNamespace(resolve=resolve))
+    body = b''.join([chunk async for chunk in response.body_iterator])
+
+    assert response.status_code == 206
+    assert body == b'data'
+    assert sleeps == ([] if expected_sleep is None else [expected_sleep])

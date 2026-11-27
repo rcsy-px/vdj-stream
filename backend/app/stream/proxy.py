@@ -1,3 +1,5 @@
+import asyncio
+import time
 from collections.abc import AsyncIterator
 
 import anyio
@@ -50,6 +52,11 @@ async def proxy_youtube_stream(
     try:
         for attempt in range(2):
             stream = await resolver.resolve(video_id, force=attempt > 0)
+            if stream.available_at is not None:
+                wait_seconds = stream.available_at - time.time()
+                if wait_seconds > 0:
+                    # Wait for YouTube's pre-roll availability window before requesting the media URL.
+                    await asyncio.sleep(min(wait_seconds, 25.0))
             headers = {**stream.http_headers, "Accept-Encoding": "identity"}
             if range_header:
                 headers["Range"] = range_header

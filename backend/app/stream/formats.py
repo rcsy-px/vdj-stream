@@ -11,3 +11,4 @@ class ResolvedStream:
     http_headers: dict[str, str] = field(default_factory=dict)
     format: ResolvedFormat = field(default_factory=ResolvedFormat)
     expires_at: int | None = None
+    available_at: float | None = None
